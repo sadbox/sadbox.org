@@ -62,13 +62,14 @@ type Tuple struct {
 func NewGeekhack() *Geekhack{
     return &Geekhack{
         CurseWords: make(map[string][]Tuple),
+        updateChan: make(chan bool),
     }
 }
 
 func (g *Geekhack) shouldUpdate() bool {
     g.mutex.RLock()
     defer g.mutex.RUnlock()
-    return time.Since(g.age).Minutes() > 15
+    return time.Since(g.age).Minutes() < 5
 }
 
 func runQuery(query string, db *sql.DB) ([]Tuple, error) {
@@ -88,9 +89,7 @@ func runQuery(query string, db *sql.DB) ([]Tuple, error) {
 }
 
 func (g *Geekhack) Update() {
-    g.mutex.Lock()
-    defer g.mutex.Unlock()
-    db, err := sql.Open("mysql", "irclogger:irclogger@/irclogs")
+    db, err := sql.Open("mysql", config.DBConn)
     if err != nil {
         log.Println(err)
         return
@@ -98,34 +97,45 @@ func (g *Geekhack) Update() {
     defer db.Close()
 
 
-    g.PostsByDay, err = runQuery(postByDay, db)
+    PostsByDay, err := runQuery(postByDay, db)
     if err != nil {
         log.Println(err)
         return
     }
 
-    g.TotalPosts, err = runQuery(totalPosts, db)
+    TotalPosts, err := runQuery(totalPosts, db)
     if err != nil {
         log.Println(err)
         return
     }
-    log.Println(config.BadWords)
+    CurseWords := make(map[string][]Tuple)
+    log.Println("Loading Cursewords!")
     for _, word := range config.BadWords {
-        log.Println(word)
-        // This is dumb.
-        g.CurseWords[word.Word], err = runQuery(fmt.Sprintf(numWords, word.Query), db)
+        log.Println(word.Word, ":", word.Query)
+        // This is dumb. Either that or I'm too dumb to figure out how to get
+        // the sql.Query() thing to allow wildcards. Maybe it's like that by design?
+        tuple, err := runQuery(fmt.Sprintf(numWords, word.Query), db)
         if err != nil {
             log.Println(err)
             return
         }
+        CurseWords[word.Word] = tuple
     }
-    log.Println(*g)
+    log.Println("Finished loading Cursewords!")
+    g.mutex.Lock()
+    defer g.mutex.Unlock()
+    g.PostsByDay = PostsByDay
+    g.TotalPosts = TotalPosts
+    g.CurseWords = CurseWords
 }
 
 func (g *Geekhack) Updater() {
+    log.Println("I'm waiting for stuff and junk!")
     for <-g.updateChan {
+        log.Println("I found stuff and junk!")
         if g.shouldUpdate() {
             g.Update()
+            log.Println("Stuff and junk complete!")
         }
     }
 }
@@ -168,6 +178,19 @@ func keyboardHandler(w http.ResponseWriter, r *http.Request) {
     }
 }
 
+func geekhackHandler(w http.ResponseWriter, r *http.Request) {
+    geekhack.mutex.RLock()
+    defer func() {
+        geekhack.mutex.RUnlock()
+        log.Println("Chillin' on channel!")
+        geekhack.updateChan <- true
+        log.Println("Shit's cash.")
+    }()
+    if err := templates.ExecuteTemplate(w, "geekhack.html", geekhack); err != nil {
+        log.Println(err)
+    }
+}
+
 func serveStatic(filename string) func(http.ResponseWriter, *http.Request) {
     return func(w http.ResponseWriter, r *http.Request) {
         http.ServeFile(w, r, filename)
@@ -193,6 +216,7 @@ func main() {
     http.HandleFunc("/", serveTemplate("main.html"))
     http.HandleFunc("/status", serveTemplate("status.html"))
     http.HandleFunc("/keyboards", keyboardHandler)
+    http.HandleFunc("/geekhack", geekhackHandler)
     http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
     http.ListenAndServe(":8080", nil)
 }

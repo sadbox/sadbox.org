@@ -3,15 +3,23 @@
     <h1>#geekhack statistics</h1>
     <h2>Posts</h2>
     <div class="row">
-
-    </div>
-    <h2>Kicks</h2>
-    <div class="row">
-
+        <table class="table table-condensed table-hover">
+            {{range $index, $tuple := .TotalPosts}}
+                <tr>
+                <td>{{$tuple.Name}}</td>
+                <td>{{$tuple.Count}}</td>
+                </tr>
+            {{end}}
+        </table>
     </div>
     <h2>Words!</h2>
     <div class="row">
-
+    {{range $word, $tuple := .CurseWords}}
+        =={{$word}}==<br>
+        {{range $index, $tuple := $tuple}}
+            {{$tuple.Name}} : {{$tuple.Count}}<br>
+        {{end}}
+    {{end}}
     </div>
 </div>
 {{template "footer.html"}}
