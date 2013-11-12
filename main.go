@@ -130,12 +130,9 @@ func (g *Geekhack) Update() {
 }
 
 func (g *Geekhack) Updater() {
-    log.Println("I'm waiting for stuff and junk!")
     for <-g.updateChan {
-        log.Println("I found stuff and junk!")
         if g.shouldUpdate() {
             g.Update()
-            log.Println("Stuff and junk complete!")
         }
     }
 }
@@ -182,9 +179,7 @@ func geekhackHandler(w http.ResponseWriter, r *http.Request) {
     geekhack.mutex.RLock()
     defer func() {
         geekhack.mutex.RUnlock()
-        log.Println("Chillin' on channel!")
         geekhack.updateChan <- true
-        log.Println("Shit's cash.")
     }()
     if err := templates.ExecuteTemplate(w, "geekhack.html", geekhack); err != nil {
         log.Println(err)

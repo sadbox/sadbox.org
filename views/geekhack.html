@@ -3,23 +3,53 @@
     <h1>#geekhack statistics</h1>
     <h2>Posts</h2>
     <div class="row">
-        <table class="table table-condensed table-hover">
-            {{range $index, $tuple := .TotalPosts}}
-                <tr>
-                <td>{{$tuple.Name}}</td>
-                <td>{{$tuple.Count}}</td>
-                </tr>
-            {{end}}
-        </table>
+        <div class="col-md-6">
+            <div class="panel panel-default">
+                <div class="panel-heading">Total Posts</div>
+                <table class="table table-condensed table-hover table-bordered">
+                    {{range $index, $tuple := .TotalPosts}}
+                        <tr>
+                        <td>{{$index}}</td>
+                        <td>{{$tuple.Name}}</td>
+                        <td>{{$tuple.Count}}</td>
+                        </tr>
+                    {{end}}
+                </table>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="panel panel-default">
+                <div class="panel-heading">Posts Per Day</div>
+                <table class="table table-condensed table-hover table-bordered">
+                    {{range $index, $tuple := .PostsByDay}}
+                        <tr>
+                        <td>{{$index}}</td>
+                        <td>{{$tuple.Name}}</td>
+                        <td>{{$tuple.Count}}</td>
+                        </tr>
+                    {{end}}
+                </table>
+            </div>
+        </div>
     </div>
     <h2>Words!</h2>
     <div class="row">
-    {{range $word, $tuple := .CurseWords}}
-        =={{$word}}==<br>
-        {{range $index, $tuple := $tuple}}
-            {{$tuple.Name}} : {{$tuple.Count}}<br>
+        {{range $word, $tuple := .CurseWords}}
+            <div class="col-md-3">
+                <div class="panel panel-default">
+                    <div class="panel-heading">{{$word}}</div>
+                    <table class="table table-condensed table-hover table-bordered">
+                        {{range $index, $innertuple := $tuple}}
+                            <tr>
+                            <td>{{$index}}</td>
+                            <td>{{$innertuple.Name}}</td>
+                            <td>{{$innertuple.Count}}</td>
+                            </tr>
+                        {{end}}
+                    </table>
+                </div>
+            </div>
         {{end}}
-    {{end}}
     </div>
 </div>
 {{template "footer.html"}}
