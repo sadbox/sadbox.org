@@ -19,13 +19,17 @@ const (
     postByDay = `select DATE(Time) as date, count(RID) as count from messages`+
                 ` where channel = '#geekhack' group by date order by count`+
                 ` desc limit 10;`
-    numWords = `select Nick, COUNT(Nick) as Fucks from messages where message`+
-               ` like LOWER('%%%s%%') and channel = '#geekhack' group by nick `+
-               `order by Fucks desc limit 10;`
     totalPosts = `select Nick, COUNT(Nick) as Posts from messages where channel`+
                  ` = '#geekhack' group by nick order by Posts desc limit 10;`
     postsByHour = `select HOUR(Time) as date, count(RID) as count from messages`+
                   ` where channel = '#geekhack' group by date order by date;`
+    updateWords = `REPLACE INTO %s
+    select newfucks.Nick, newfucks.Posts + %s.Posts, NOW() from 
+    (select Nick, COUNT(Nick) as Posts from messages where LOWER(message) like '%%%s%%' and channel = '#geekhack' and Time > (select MAX(Updated) from %s) group by Nick) as newfucks
+    LEFT OUTER JOIN 
+    %s
+    ON newfucks.Nick = %s.Nick;`
+    topTenWords = `select * from %s order by Posts desc limit 10;`
 )
 
 var (
@@ -42,6 +46,7 @@ type Config struct {
 type BadWord struct {
     Word string
     Query string
+    Table string
 }
 
 type Geekhack struct {
@@ -112,9 +117,14 @@ func (g *Geekhack) Update() {
     log.Println("Loading Cursewords!")
     for _, word := range config.BadWords {
         log.Println(word.Word, ":", word.Query)
+        _, err := db.Exec(fmt.Sprintf(updateWords, word.Table, word.Table, word.Query, word.Table, word.Table, word.Table))
+        if err != nil {
+            log.Println(err)
+            return
+        }
         // This is dumb. Either that or I'm too dumb to figure out how to get
         // the sql.Query() thing to allow wildcards. Maybe it's like that by design?
-        tuple, err := runQuery(fmt.Sprintf(numWords, word.Query), db)
+        tuple, err := runQuery(fmt.Sprintf(topTenWords, word.Table), db)
         if err != nil {
             log.Println(err)
             return
