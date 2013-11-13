@@ -29,7 +29,7 @@ const (
     LEFT OUTER JOIN 
     %s
     ON newfucks.Nick = %s.Nick;`
-    topTenWords = `select * from %s order by Posts desc limit 10;`
+    topTenWords = `select Nick, Posts from %s order by Posts desc limit 10;`
 )
 
 var (
