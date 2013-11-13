@@ -88,6 +88,10 @@ func init() {
 	}
 	xml.Unmarshal(xmlFile, &config)
 	log.Println(config)
+
+    geekhack.Update()
+    go geekhack.Updater()
+
 }
 
 func main() {

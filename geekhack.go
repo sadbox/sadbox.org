@@ -26,7 +26,7 @@ const (
     topTenWords = `select Nick, Posts from %s order by Posts desc limit 10;`
 )
 
-var  geekhack  = NewGeekhack()
+var geekhack = NewGeekhack()
 
 
 type Geekhack struct {
@@ -45,6 +45,7 @@ type Tuple struct {
 }
 
 func NewGeekhack() *Geekhack {
+    log.Println("Building new geekhack thingy")
     return &Geekhack{
         CurseWords: make(map[string][]Tuple),
         updateChan: make(chan bool),
@@ -76,6 +77,7 @@ func runQuery(query string, db *sql.DB) ([]Tuple, error) {
 
 func (g *Geekhack) Update() {
     start := time.Now()
+    log.Println("Updating GH stats.")
     db, err := sql.Open("mysql", config.DBConn)
     if err != nil {
         log.Println(err)
