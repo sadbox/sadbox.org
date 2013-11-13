@@ -45,8 +45,8 @@ func main() {
     defer db.Close()
 
     for _, word := range config.BadWords {
-        fmt.Printf(`drop table %s;`, word.Table)
-        _, err := db.Exec(fmt.Sprintf(`drop table %s;`, word.Table))
+        fmt.Printf(`drop table if exists %s;`, word.Table)
+        _, err := db.Exec(fmt.Sprintf(`drop table if exists %s;`, word.Table))
         if err != nil {
             panic(err)
         }
