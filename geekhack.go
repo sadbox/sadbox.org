@@ -52,7 +52,6 @@ func NewGeekhack() *Geekhack {
 }
 
 func (g *Geekhack) shouldUpdate() bool {
-	return true
 	g.mutex.RLock()
 	defer g.mutex.RUnlock()
 	return time.Since(g.age).Minutes() < 5
