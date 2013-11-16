@@ -1,7 +1,7 @@
 $(function () {
      $("#spinner").show();
      $("#postsByMinute").hide();
-     $.getJSON('http://sadbox.org/geekhack/postsbyminute', function (data) {
+     $.getJSON('https://sadbox.org/geekhack/postsbyminute', function (data) {
         $("#spinner").hide();
         $("#postsByMinute").show();
         $('#postsByMinute').highcharts({
