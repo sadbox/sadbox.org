@@ -55,15 +55,15 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Printf(genTableData, word.Table, word.Query)
-		_, err = db.Exec(fmt.Sprintf(genTableData, word.Table, word.Query))
-		if err != nil {
-			panic(err)
-		}
-		fmt.Printf(`select * from %s`, word.Table)
-		_, err = db.Exec(fmt.Sprintf(`select * from %s`, word.Table))
-		if err != nil {
-			panic(err)
-		}
+		//fmt.Printf(genTableData, word.Table, word.Query)
+		//_, err = db.Exec(fmt.Sprintf(genTableData, word.Table, word.Query))
+		//if err != nil {
+		//	panic(err)
+		//}
+		//fmt.Printf(`select * from %s`, word.Table)
+		//_, err = db.Exec(fmt.Sprintf(`select * from %s`, word.Table))
+		//if err != nil {
+		//	panic(err)
+		//}
 	}
 }
