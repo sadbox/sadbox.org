@@ -1,5 +1,4 @@
 $(function () {
-     $("#spinner").show();
      $("#postsByMinute").hide();
      $.getJSON('https://sadbox.org/geekhack/postsbyminute', function (data) {
         $("#spinner").hide();
@@ -28,6 +27,9 @@ $(function () {
                 pointFormat: 'at {point.x} minute(s) after midnight UTC.'
             },
             legend: {
+                enabled: false
+            },
+            credits: {
                 enabled: false
             },
             plotOptions: {
