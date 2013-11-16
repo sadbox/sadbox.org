@@ -95,7 +95,6 @@ func pbmHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error generating minute data", 500)
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	written, err := w.Write(jsonData)
 	if written < len(jsonData) || err != nil {
 		log.Println("Error writing response to client")
