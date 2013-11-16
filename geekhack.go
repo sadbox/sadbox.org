@@ -15,27 +15,30 @@ const (
 		` desc limit 10;`
 	totalPosts = `select Nick, COUNT(Nick) as Posts from messages where channel` +
 		` = '#geekhack' group by nick order by Posts desc limit 10;`
-	postsByHour = `select HOUR(Time) as date, count(RID) as count from messages` +
-		` where channel = '#geekhack' group by date order by date;`
-	updateWords = `REPLACE INTO %s
-    select newfucks.Nick, newfucks.Posts + %s.Posts, NOW() from 
-    (select Nick, COUNT(Nick) as Posts from messages where LOWER(message) like '%%%s%%' and channel = '#geekhack' and Time > (select MAX(Updated) from %s) group by Nick) as newfucks
+	postsByMinute = `select count from (select HOUR(Time)*60+MINUTE(Time) as date,` +
+		` count(RID) as count from messages where channel = '#geekhack'` +
+		` group by date order by date) as subquery;`
+	updateWords = `REPLACE INTO %[1]s
+    select newfucks.Nick, newfucks.Posts + %[1]s.Posts, NOW() from 
+    (select Nick, COUNT(Nick) as Posts from messages where LOWER(message) like '%%%[2]s%%' and channel = '#geekhack' and Time > (select MAX(Updated) from %[1]s) group by Nick) as newfucks
     LEFT OUTER JOIN 
-    %s
-    ON newfucks.Nick = %s.Nick;`
+    %[1]s
+    ON newfucks.Nick = %[1]s.Nick;`
 	topTenWords = `select Nick, Posts from %s order by Posts desc limit 10;`
 )
 
-var geekhack = NewGeekhack()
+var geekhack *Geekhack
 
 type Geekhack struct {
 	updateChan chan bool
+	db         *sql.DB
 
-	mutex      sync.RWMutex // Protects:
-	PostsByDay []Tuple
-	CurseWords map[string][]Tuple
-	TotalPosts []Tuple
-	age        time.Time
+	mutex         sync.RWMutex // Protects:
+	PostsByDay    []Tuple
+	CurseWords    map[string][]Tuple
+	TotalPosts    []Tuple
+	PostsByMinute []int
+	age           time.Time
 }
 
 type Tuple struct {
@@ -44,24 +47,30 @@ type Tuple struct {
 }
 
 func NewGeekhack() *Geekhack {
-	log.Println("Building new geekhack thingy")
+	db, err := sql.Open("mysql", config.DBConn)
+	if err != nil {
+		panic(err)
+	}
+
 	return &Geekhack{
-		CurseWords: make(map[string][]Tuple),
-		updateChan: make(chan bool),
+		CurseWords:    make(map[string][]Tuple),
+		updateChan:    make(chan bool),
+		db:            db,
+		PostsByMinute: []int{1, 2, 3},
 	}
 }
 
 func (g *Geekhack) shouldUpdate() bool {
 	g.mutex.RLock()
 	defer g.mutex.RUnlock()
-	return time.Since(g.age).Minutes() < 5
+	return time.Since(g.age).Minutes() > 2
 }
 
-func runQuery(query string, db *sql.DB) ([]Tuple, error) {
+func (g *Geekhack) runQuery(query string) ([]Tuple, error) {
 	var nick string
 	var posts int
 	var tuple []Tuple
-	rows, err := db.Query(query)
+	rows, err := g.db.Query(query)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -73,52 +82,71 @@ func runQuery(query string, db *sql.DB) ([]Tuple, error) {
 	return tuple, nil
 }
 
-func (g *Geekhack) Update() {
-	start := time.Now()
-	log.Println("Updating GH stats.")
-	db, err := sql.Open("mysql", config.DBConn)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer db.Close()
-
-	PostsByDay, err := runQuery(postByDay, db)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	TotalPosts, err := runQuery(totalPosts, db)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
+func (g *Geekhack) UpdateCurseWords() (map[string][]Tuple, error) {
 	CurseWords := make(map[string][]Tuple)
-	log.Println("Loading Cursewords!")
 	for _, word := range config.BadWords {
-		log.Println(word.Word, ":", word.Query)
-		_, err := db.Exec(fmt.Sprintf(updateWords, word.Table, word.Table, word.Query, word.Table, word.Table, word.Table))
+		_, err := g.db.Exec(fmt.Sprintf(updateWords, word.Table, word.Query))
 		if err != nil {
-			log.Println(err)
-			return
+			return nil, err
 		}
 		// This is dumb. Either that or I'm too dumb to figure out how to get
 		// the sql.Query() thing to allow wildcards. Maybe it's like that by design?
-		tuple, err := runQuery(fmt.Sprintf(topTenWords, word.Table), db)
+		tuple, err := g.runQuery(fmt.Sprintf(topTenWords, word.Table))
 		if err != nil {
-			log.Println(err)
-			return
+			return nil, err
 		}
 		CurseWords[word.Word] = tuple
 	}
-	log.Println("Time to import data: ", time.Since(start))
+	return CurseWords, nil
+}
+
+func (g *Geekhack) Update() {
+	start := time.Now()
+	PostsByDay, err := g.runQuery(postByDay)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	TotalPosts, err := g.runQuery(totalPosts)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	log.Println("Posts updated in:", time.Since(start))
+
+	start = time.Now()
+	CurseWords, err := g.UpdateCurseWords()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	log.Println("CurseWords updated in:", time.Since(start))
+
+	start = time.Now()
+	PostsByMinute := []int{}
+	rows, err := g.db.Query(postsByMinute)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	for rows.Next() {
+		var posts int
+		rows.Scan(&posts)
+		PostsByMinute = append(PostsByMinute, posts)
+	}
+	log.Println("PostsByMinute updated in:", time.Since(start))
+	fmt.Println(PostsByMinute)
+
+	// Update the struct
 	g.mutex.Lock()
-	defer g.mutex.Unlock()
 	g.PostsByDay = PostsByDay
 	g.TotalPosts = TotalPosts
 	g.CurseWords = CurseWords
+	g.PostsByMinute = PostsByMinute
+	g.age = time.Now()
+	g.mutex.Unlock()
+	// Finish update, need to unlock it
 }
 
 func (g *Geekhack) Updater() {
