@@ -136,17 +136,25 @@ func (g *Geekhack) Update() {
 		PostsByMinute = append(PostsByMinute, posts)
 	}
 	log.Println("PostsByMinute updated in:", time.Since(start))
-	fmt.Println(PostsByMinute)
 
 	// Update the struct
 	g.mutex.Lock()
 	g.PostsByDay = PostsByDay
 	g.TotalPosts = TotalPosts
 	g.CurseWords = CurseWords
-	g.PostsByMinute = PostsByMinute
+	g.PostsByMinute = lowPass(PostsByMinute)
 	g.age = time.Now()
 	g.mutex.Unlock()
 	// Finish update, need to unlock it
+}
+
+func lowPass(data []int) []int {
+	result := make([]int, len(data))
+	result[0] = data[0]
+	for i := 1; i < len(data); i++ {
+		result[i] = int(float64(result[i-1]) + 0.15*float64(data[i]-result[i-1]))
+	}
+	return result
 }
 
 func (g *Geekhack) Updater() {
