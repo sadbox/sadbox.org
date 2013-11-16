@@ -18,10 +18,9 @@ const (
 	postsByMinute = `select count from (select HOUR(Time)*60+MINUTE(Time) as date,` +
 		` count(RID) as count from messages where channel = '#geekhack'` +
 		` group by date order by date) as subquery;`
-    updateWords = `REPLACE INTO %[1]s
-    select newfucks.Nick, newfucks.Posts + %[1]s.Posts, NOW() from 
-    (select Nick, ROUND((LENGTH(message) - LENGTH(REPLACE(LOWER(message), "%[2]s", "")))/LENGTH("%[2]s")) as Posts from messages where channel = '#geekhack' and Time > (select
- MAX(Updated) from %[1]s) group by Nick having Posts > 0) as newfucks
+	updateWords = `REPLACE INTO %[1]s
+    select newfucks.Nick, newfucks.Posts + (select COALESCE(%[1]s.Posts, 0)), NOW() from 
+    (select Nick, SUM(Posts) as Posts from (select Nick, ROUND((LENGTH(message) - LENGTH(REPLACE(LOWER(message), "%[2]s", "")))/LENGTH("%[2]s")) as Posts from messages where channel = '#geekhack' and Time > (SELECT COALESCE((select MAX(Updated) from %[1]s), (select MIN(Time) from messages)))) as blah group by Nick having Posts > 0) as newfucks
     LEFT OUTER JOIN 
     %[1]s
     ON newfucks.Nick = %[1]s.Nick;`

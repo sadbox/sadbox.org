@@ -1,5 +1,9 @@
 $(function () {
+     $("#spinner").show();
+     $("#postsByMinute").hide();
      $.getJSON('http://sadbox.org:8080/geekhack/postsbyminute', function (data) {
+        $("#spinner").hide();
+        $("#postsByMinute").show();
         $('#postsByMinute').highcharts({
             chart: {
                 type: 'area'
