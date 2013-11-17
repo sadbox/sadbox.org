@@ -133,6 +133,7 @@ func (g *Geekhack) Update() {
 		rows.Scan(&posts)
 		PostsByMinute = append(PostsByMinute, posts)
 	}
+	PostsByMinute = lowPass(PostsByMinute)
 	log.Println("PostsByMinute updated in:", time.Since(start))
 
 	// Update the struct
@@ -140,7 +141,7 @@ func (g *Geekhack) Update() {
 	g.PostsByDay = PostsByDay
 	g.TotalPosts = TotalPosts
 	g.CurseWords = CurseWords
-	g.PostsByMinute = lowPass(PostsByMinute)
+	g.PostsByMinute = PostsByMinute
 	g.age = time.Now()
 	g.mutex.Unlock()
 	// Finish update, need to unlock it
