@@ -1,5 +1,5 @@
 $(function () {
-     $("#postsByMinute").hide();
+     $("#spinner").show();
      $.getJSON('https://sadbox.org/geekhack/postsbyminute', function (data) {
         $("#spinner").hide();
         $("#postsByMinute").show();
