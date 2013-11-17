@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"path"
 	"strings"
+    "fmt"
 )
 
 var (
@@ -24,8 +25,9 @@ type Config struct {
 
 type BadWord struct {
 	Word  string
-	Query string
+	Query []string
 	Table string
+    BuiltQuery string
 }
 
 func getFiles(folder, fileType string) []string {
@@ -123,6 +125,16 @@ func main() {
 	xml.Unmarshal(xmlFile, &config)
 
 	log.Println("Starting sadbox.org on", config.Listen)
+
+    for outerIndex, word := range config.BadWords {
+        for innerIndex, searchTerm := range word.Query {
+            word.BuiltQuery = word.BuiltQuery + fmt.Sprintf(`ROUND((LENGTH(message) - LENGTH(REPLACE(LOWER(message), "%[1]s", "")))/LENGTH("%[1]s"))`, searchTerm)
+            if innerIndex != len(word.Query)-1 {
+                word.BuiltQuery = word.BuiltQuery + "+"
+            }
+        }
+        config.BadWords[outerIndex] = word
+    }
 
 	geekhack = NewGeekhack()
 	defer geekhack.db.Close()

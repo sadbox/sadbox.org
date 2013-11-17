@@ -20,7 +20,7 @@ const (
 		` group by date order by date) as subquery;`
 	updateWords = `REPLACE INTO %[1]s
     select newfucks.Nick, newfucks.Posts + (select COALESCE(%[1]s.Posts, 0)), NOW() from 
-    (select Nick, SUM(Posts) as Posts from (select Nick, ROUND((LENGTH(message) - LENGTH(REPLACE(LOWER(message), "%[2]s", "")))/LENGTH("%[2]s")) as Posts from messages where channel = '#geekhack' and Time > (SELECT COALESCE((select MAX(Updated) from %[1]s), (select MIN(Time) from messages)))) as blah group by Nick having Posts > 0) as newfucks
+    (select Nick, SUM(Posts) as Posts from (select Nick, %[2]s as Posts from messages where channel = '#geekhack' and Time > (SELECT COALESCE((select MAX(Updated) from %[1]s), (select MIN(Time) from messages)))) as blah group by Nick having Posts > 0) as newfucks
     LEFT OUTER JOIN 
     %[1]s
     ON newfucks.Nick = %[1]s.Nick;`
@@ -85,7 +85,8 @@ func (g *Geekhack) runQuery(query string) ([]Tuple, error) {
 func (g *Geekhack) UpdateCurseWords() (map[string][]Tuple, error) {
 	CurseWords := make(map[string][]Tuple)
 	for _, word := range config.BadWords {
-		_, err := g.db.Exec(fmt.Sprintf(updateWords, word.Table, word.Query))
+		_, err := g.db.Exec(fmt.Sprintf(updateWords, word.Table, word.BuiltQuery))
+		fmt.Println(fmt.Sprintf(updateWords, word.Table, word.BuiltQuery))
 		if err != nil {
 			return nil, err
 		}
