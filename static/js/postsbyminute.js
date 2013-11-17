@@ -8,13 +8,12 @@ $(function () {
                 type: 'area'
             },
             title: {
-                text: 'Posts Broken Down to Minute Ranges'
+                text: 'Activity in channel by time of day'
             },
             xAxis: {
-                labels: {
-                    formatter: function() {
-                        return this.value; // clean, unformatted number for year
-                    }
+                type: 'datetime',
+                dateTimeLabelFormats: {
+                    day: '%H:%M'
                 }
             },
             yAxis: {
@@ -23,8 +22,7 @@ $(function () {
                 }
             },
             tooltip: {
-                headerFormat: '<b>{point.y}</b> posts<br>',
-                pointFormat: 'at {point.x} minute(s) after midnight UTC.'
+                enabled: false
             },
             legend: {
                 enabled: false
@@ -34,9 +32,16 @@ $(function () {
             },
             plotOptions: {
                 area: {
-                    pointStart: 0,
+                    pointStart: Date.UTC(0,0,0),
+                    pointInterval: 60 * 1000,
+                    enableMouseTracking: false,
                     marker: {
                         enabled: false,
+                        states: {
+                            hover: {
+                                enabled: false
+                            }
+                        }
                     }
                 }
             },
