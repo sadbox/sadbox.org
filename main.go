@@ -89,10 +89,7 @@ func geekhackHandler(w http.ResponseWriter, r *http.Request) {
 
 func pbmHandler(w http.ResponseWriter, r *http.Request) {
 	geekhack.mutex.RLock()
-	defer func() {
-		geekhack.mutex.RUnlock()
-		geekhack.updateChan <- true
-	}()
+	defer geekhack.mutex.RUnlock()
 	jsonSource := struct {
 		Name string `json:"name"`
 		Data []int  `json:"data"`
