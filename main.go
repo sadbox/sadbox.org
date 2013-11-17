@@ -9,12 +9,14 @@ import (
 	"log"
 	"net/http"
 	"path"
+	"regexp"
 	"strings"
 )
 
 var (
-	templates = template.Must(template.ParseFiles(getFiles("./views/", ".html")...))
-	config    Config
+	templates  = template.Must(template.ParseFiles(getFiles("./views/", ".html")...))
+	fourOhFour = regexp.MustCompile("^/(status)")
+	config     Config
 )
 
 type Config struct {
@@ -46,6 +48,12 @@ func getFiles(folder, fileType string) []string {
 
 func serveTemplate(filename string) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		m := fourOhFour.FindStringSubmatch(r.URL.Path)
+		if m == nil {
+			http.NotFound(w, r)
+			return
+		}
+
 		if err := templates.ExecuteTemplate(w, filename, nil); err != nil {
 			log.Println(err)
 		}
