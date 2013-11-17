@@ -15,7 +15,7 @@ import (
 
 var (
 	templates  = template.Must(template.ParseFiles(getFiles("./views/", ".html")...))
-	fourOhFour = regexp.MustCompile("^/(status)")
+	fourOhFour = regexp.MustCompile("^/(status)?$")
 	config     Config
 )
 
