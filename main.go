@@ -80,7 +80,10 @@ func geekhackHandler(w http.ResponseWriter, r *http.Request) {
 	geekhack.mutex.RLock()
 	defer func() {
 		geekhack.mutex.RUnlock()
-		geekhack.updateChan <- true
+		select {
+		case geekhack.updateChan <- true:
+		default:
+		}
 	}()
 	if err := templates.ExecuteTemplate(w, "geekhack.html", geekhack); err != nil {
 		log.Println(err)

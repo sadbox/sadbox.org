@@ -54,7 +54,7 @@ func NewGeekhack() *Geekhack {
 
 	return &Geekhack{
 		CurseWords:    make(map[string][]Tuple),
-		updateChan:    make(chan bool, 1000),
+		updateChan:    make(chan bool),
 		db:            db,
 		PostsByMinute: []int{1, 2, 3},
 	}
