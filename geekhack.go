@@ -86,12 +86,9 @@ func (g *Geekhack) UpdateCurseWords() (map[string][]Tuple, error) {
 	CurseWords := make(map[string][]Tuple)
 	for _, word := range config.BadWords {
 		_, err := g.db.Exec(fmt.Sprintf(updateWords, word.Table, word.BuiltQuery))
-		fmt.Println(fmt.Sprintf(updateWords, word.Table, word.BuiltQuery))
 		if err != nil {
 			return nil, err
 		}
-		// This is dumb. Either that or I'm too dumb to figure out how to get
-		// the sql.Query() thing to allow wildcards. Maybe it's like that by design?
 		tuple, err := g.runQuery(fmt.Sprintf(topTenWords, word.Table))
 		if err != nil {
 			return nil, err
