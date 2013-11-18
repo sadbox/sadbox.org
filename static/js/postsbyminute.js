@@ -32,7 +32,7 @@ $(function () {
             },
             tooltip: {
                 formatter: function() {
-                    return this.y.toPrecision(3)+' posts per minute at '+Highcharts.dateFormat('%H:%M', this.x)
+                    return '<b>'+this.y.toPrecision(3)+'</b> posts per minute at <b>'+Highcharts.dateFormat('%H:%M', this.x)+'</b>'
                 }
             },
             legend: {
