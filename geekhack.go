@@ -28,10 +28,7 @@ const (
 	topTenWords = `select Nick, Posts from %s order by Posts desc limit 10;`
 )
 
-var (
-	geekhack *Geekhack
-	logStart = time.Date(2012, 12, 17, 4, 4, 0, 0, time.UTC)
-)
+var geekhack *Geekhack
 
 type Geekhack struct {
 	updateChan chan bool
