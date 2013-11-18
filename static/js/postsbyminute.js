@@ -3,6 +3,12 @@ $(function () {
      $.getJSON('https://sadbox.org/geekhack/postsbyminute', function (data) {
         $("#spinner").hide();
         $("#postsByMinute").show();
+        Highcharts.setOptions({
+            global : {
+                useUTC : false
+            }
+        });
+        var currentime = new Date();
         $('#postsByMinute').highcharts({
             chart: {
                 type: 'area'
@@ -14,6 +20,9 @@ $(function () {
                 type: 'datetime',
                 dateTimeLabelFormats: {
                     day: '%H:%M'
+                },
+                title: {
+                    text: "Time of Posts (UTC Offset: "+currentime.getTimezoneOffset()/60+")"
                 }
             },
             yAxis: {
