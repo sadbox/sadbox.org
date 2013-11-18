@@ -94,8 +94,8 @@ func pbmHandler(w http.ResponseWriter, r *http.Request) {
 	geekhack.mutex.RLock()
 	defer geekhack.mutex.RUnlock()
 	jsonSource := struct {
-		Name string `json:"name"`
-		Data []int  `json:"data"`
+		Name string    `json:"name"`
+		Data []float64 `json:"data"`
 	}{
 		"Posts By Minute",
 		geekhack.PostsByMinute,

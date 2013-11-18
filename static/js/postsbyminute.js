@@ -27,7 +27,7 @@ $(function () {
             },
             yAxis: {
                 title: {
-                    text: 'Total Posts'
+                    text: 'Posts Per Minute'
                 }
             },
             tooltip: {

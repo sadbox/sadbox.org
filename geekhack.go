@@ -16,8 +16,8 @@ const (
 	totalPosts = `select Nick, COUNT(Nick) as Posts from messages where channel` +
 		` = '#geekhack' group by nick order by Posts desc limit 10;`
 	postsByMinute = `select count from (select HOUR(Time)*60+MINUTE(Time) as` +
-		` date, ROUND(count(RID)/(SELECT DATEDIFF(NOW(), (SELECT MIN(Time)` +
-		` from messages where channel = '#geekhack')))) as count from` +
+		` date, count(RID)/(SELECT DATEDIFF(NOW(), (SELECT MIN(Time)` +
+		` from messages where channel = '#geekhack'))) as count from` +
 		` messages where channel ='#geekhack' group by date order by date) as subquery;`
 	updateWords = `REPLACE INTO %[1]s
     select newfucks.Nick, newfucks.Posts + (select COALESCE(%[1]s.Posts, 0)), NOW() from 
@@ -41,7 +41,7 @@ type Geekhack struct {
 	PostsByDay    []Tuple
 	CurseWords    map[string][]Tuple
 	TotalPosts    []Tuple
-	PostsByMinute []int
+	PostsByMinute []float64
 	age           time.Time
 }
 
@@ -57,10 +57,9 @@ func NewGeekhack() *Geekhack {
 	}
 
 	return &Geekhack{
-		CurseWords:    make(map[string][]Tuple),
-		updateChan:    make(chan bool, 3),
-		db:            db,
-		PostsByMinute: []int{1, 2, 3},
+		CurseWords: make(map[string][]Tuple),
+		updateChan: make(chan bool, 3),
+		db:         db,
 	}
 }
 
@@ -126,14 +125,14 @@ func (g *Geekhack) Update() {
 	log.Println("CurseWords updated in:", time.Since(start))
 
 	start = time.Now()
-	PostsByMinute := []int{}
+	PostsByMinute := []float64{}
 	rows, err := g.db.Query(postsByMinute)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 	for rows.Next() {
-		var posts int
+		var posts float64
 		rows.Scan(&posts)
 		PostsByMinute = append(PostsByMinute, posts)
 	}
@@ -151,9 +150,9 @@ func (g *Geekhack) Update() {
 	// Finish update, need to unlock it
 }
 
-func movingAverage(input []int, size int) []int {
+func movingAverage(input []float64, size int) []float64 {
 	var start, end int
-	result := make([]int, len(input))
+	result := make([]float64, len(input))
 	for i := 0; i < len(input); i++ {
 		if i < size {
 			start = 0
@@ -168,7 +167,7 @@ func movingAverage(input []int, size int) []int {
 		for _, value := range input[start:end] {
 			result[i] += value
 		}
-		result[i] /= len(input[start:end])
+		result[i] /= float64(len(input[start:end]))
 	}
 	return result
 }
