@@ -133,7 +133,7 @@ func (g *Geekhack) Update() {
 		rows.Scan(&posts)
 		PostsByMinute = append(PostsByMinute, posts)
 	}
-	PostsByMinute = lowPass(PostsByMinute)
+	PostsByMinute = movingAverage(PostsByMinute, 10)
 	log.Println("PostsByMinute updated in:", time.Since(start))
 
 	// Update the struct
@@ -147,11 +147,24 @@ func (g *Geekhack) Update() {
 	// Finish update, need to unlock it
 }
 
-func lowPass(data []int) []int {
-	result := make([]int, len(data))
-	result[0] = data[0]
-	for i := 1; i < len(data); i++ {
-		result[i] = int(float64(result[i-1]) + 0.15*float64(data[i]-result[i-1]))
+func movingAverage(input []int, size int) []int {
+	var start, end int
+	result := make([]int, len(input))
+	for i := 0; i < len(input); i++ {
+		if i < size {
+			start = 0
+		} else {
+			start = i - size
+		}
+		if size+i > len(input) {
+			end = len(input)
+		} else {
+			end = size + i
+		}
+		for _, value := range input[start:end] {
+			result[i] += value
+		}
+		result[i] /= len(input[start:end])
 	}
 	return result
 }
