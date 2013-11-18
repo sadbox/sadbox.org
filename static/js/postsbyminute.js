@@ -22,7 +22,7 @@ $(function () {
                     day: '%H:%M'
                 },
                 title: {
-                    text: "Time of Posts (UTC Offset: "+currentime.getTimezoneOffset()/60+")"
+                    text: "Time of Post (UTC Offset: "+currentime.getTimezoneOffset()/60+")"
                 }
             },
             yAxis: {
