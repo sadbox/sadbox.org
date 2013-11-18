@@ -156,10 +156,10 @@ func movingAverage(input []float64, size int) []float64 {
 		} else {
 			start = i - size
 		}
-		if size+i > len(input) {
+		if size+i+1 > len(input) {
 			end = len(input)
 		} else {
-			end = size + i
+			end = size + i + 1
 		}
 		for _, value := range input[start:end] {
 			result[i] += value
