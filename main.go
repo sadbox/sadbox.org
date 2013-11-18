@@ -97,7 +97,7 @@ func pbmHandler(w http.ResponseWriter, r *http.Request) {
 		Name string    `json:"name"`
 		Data []float64 `json:"data"`
 	}{
-		"Posts By Minute",
+		"Posts Per Minute",
 		geekhack.PostsByMinute,
 	}
 	jsonData, err := json.Marshal(jsonSource)

@@ -31,7 +31,9 @@ $(function () {
                 }
             },
             tooltip: {
-                enabled: false
+                formatter: function() {
+                    return this.y.toPrecision(3)+' posts per minute at '+Highcharts.dateFormat('%H:%M', this.x)
+                }
             },
             legend: {
                 enabled: false
@@ -43,12 +45,13 @@ $(function () {
                 area: {
                     pointStart: Date.UTC(0,0,0),
                     pointInterval: 60 * 1000,
-                    enableMouseTracking: false,
                     marker: {
                         enabled: false,
+                        symbol: 'circle',
+                        radius: 2,
                         states: {
                             hover: {
-                                enabled: false
+                                enabled: true
                             }
                         }
                     }
