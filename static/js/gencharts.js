@@ -31,6 +31,11 @@ $(function () {
                     text: 'Posts Per Minute'
                 }
             },
+            tooltip: {
+                formatter: function() {
+                    return '<b>'+this.y.toPrecision(3)+'</b> posts per minute at <b>'+Highcharts.dateFormat('%H:%M', this.x)+'</b>'
+                }
+            },
             legend: {
                 enabled: false
             },
