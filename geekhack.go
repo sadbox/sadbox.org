@@ -171,7 +171,6 @@ func (g *Geekhack) Update() {
 		log.Println(err)
 	}
 	log.Println("PostsByDayAll updated in:", time.Since(start))
-	fmt.Println(PostsByDayAll)
 
 	// Update the struct
 	g.mutex.Lock()
@@ -179,6 +178,7 @@ func (g *Geekhack) Update() {
 	g.TotalPosts = TotalPosts
 	g.CurseWords = CurseWords
 	g.PostsByMinute = PostsByMinute
+	g.PostByDayAll = PostsByDayAll
 	g.age = time.Now()
 	g.mutex.Unlock()
 	// Finish update, need to unlock it
