@@ -79,8 +79,13 @@ func (g *Geekhack) runQuery(query string) ([]Tuple, error) {
 		return nil, err
 	}
 	for rows.Next() {
-		rows.Scan(&nick, &posts)
+		if err := rows.Scan(&nick, &posts); err != nil {
+			return nil, err
+		}
 		tuple = append(tuple, Tuple{nick, posts})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return tuple, nil
 }
@@ -110,13 +115,19 @@ func (g *Geekhack) UpdatePostByDayAll() ([][]int64, error) {
 		return nil, err
 	}
 	for rows.Next() {
-		rows.Scan(&date, &posts)
+		if err := rows.Scan(&date, &posts); err != nil {
+			return nil, err
+		}
+
 		fmt.Println(date, posts)
 		convTime, err := time.Parse("2006-01-02", date)
 		if err != nil {
 			return nil, err
 		}
 		returnValue = append(returnValue, []int64{convTime.Unix() * 1000, int64(posts)})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return returnValue, nil
 }
@@ -153,8 +164,15 @@ func (g *Geekhack) Update() {
 	}
 	for rows.Next() {
 		var posts float64
-		rows.Scan(&posts)
+		if err := rows.Scan(&posts); err != nil {
+			log.Println(err)
+			return
+		}
 		PostsByMinute = append(PostsByMinute, posts)
+	}
+	if err := rows.Err(); err != nil {
+		log.Println(err)
+		return
 	}
 	PostsByMinute = movingAverage(PostsByMinute, 10)
 	log.Println("PostsByMinute updated in:", time.Since(start))

@@ -152,7 +152,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	xml.Unmarshal(xmlFile, &config)
+	if err = xml.Unmarshal(xmlFile, &config); err != nil {
+		log.Fatal(err)
+	}
 
 	log.Println("Starting sadbox.org on", config.Listen)
 
@@ -181,5 +183,5 @@ func main() {
 	http.HandleFunc("/geekhack/postsbyminute", pbmHandler)
 	http.HandleFunc("/geekhack/postsbydayall", pbdaHandler)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
-	http.ListenAndServe(config.Listen, Log(http.DefaultServeMux))
+	log.Fatal(http.ListenAndServe(config.Listen, Log(http.DefaultServeMux)))
 }
