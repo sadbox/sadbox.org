@@ -5,6 +5,8 @@ import (
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -13,6 +15,8 @@ const (
 	postByDay = `select DATE(Time) as date, count(RID) as count from messages` +
 		` where channel = '#geekhack' group by date order by count` +
 		` desc limit 10;`
+	postByDayAll = `select DATE(Time) as date, count(RID) as count from messages` +
+		` where channel = '#geekhack' group by date order by date`
 	totalPosts = `select Nick, COUNT(Nick) as Posts from messages where channel` +
 		` = '#geekhack' group by nick order by Posts desc limit 10;`
 	postsByMinute = `select count from (select HOUR(Time)*60+MINUTE(Time) as` +
@@ -39,6 +43,7 @@ type Geekhack struct {
 	CurseWords    map[string][]Tuple
 	TotalPosts    []Tuple
 	PostsByMinute []float64
+	PostByDayAll  [][]int
 	age           time.Time
 }
 
@@ -98,6 +103,30 @@ func (g *Geekhack) UpdateCurseWords() (map[string][]Tuple, error) {
 	return CurseWords, nil
 }
 
+func (g *Geekhack) UpdatePostByDayAll() ([][]int, error) {
+	var date string
+	var posts int
+	var returnValue [][]int
+	rows, err := g.db.Query(postByDayAll)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		rows.Scan(&date, &posts)
+		fmt.Println(date, posts)
+		appendValue := []int{}
+		for _, value := range strings.Split(date, "-") {
+			dateInt, err := strconv.Atoi(value)
+			if err != nil {
+				return nil, err
+			}
+			appendValue = append(appendValue, dateInt)
+		}
+		returnValue = append(returnValue, append(appendValue, posts))
+	}
+	return returnValue, nil
+}
+
 func (g *Geekhack) Update() {
 	start := time.Now()
 	PostsByDay, err := g.runQuery(postByDay)
@@ -135,6 +164,14 @@ func (g *Geekhack) Update() {
 	}
 	PostsByMinute = movingAverage(PostsByMinute, 10)
 	log.Println("PostsByMinute updated in:", time.Since(start))
+
+	start = time.Now()
+	PostsByDayAll, err := g.UpdatePostByDayAll()
+	if err != nil {
+		log.Println(err)
+	}
+	log.Println("PostsByDayAll updated in:", time.Since(start))
+	fmt.Println(PostsByDayAll)
 
 	// Update the struct
 	g.mutex.Lock()

@@ -112,6 +112,28 @@ func pbmHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func pbdaHandler(w http.ResponseWriter, r *http.Request) {
+	geekhack.mutex.RLock()
+	defer geekhack.mutex.RUnlock()
+	jsonSource := struct {
+		Name string  `json:"name"`
+		Data [][]int `json:"data"`
+	}{
+		"Posts Per Day All",
+		geekhack.PostByDayAll,
+	}
+	jsonData, err := json.Marshal(jsonSource)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Error generating day data", 500)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	written, err := w.Write(jsonData)
+	if written < len(jsonData) || err != nil {
+		log.Println("Error writing response to client")
+	}
+}
+
 func serveStatic(filename string) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, filename)
@@ -157,6 +179,7 @@ func main() {
 	http.HandleFunc("/keyboards", keyboardHandler)
 	http.HandleFunc("/geekhack", geekhackHandler)
 	http.HandleFunc("/geekhack/postsbyminute", pbmHandler)
+	http.HandleFunc("/geekhack/postsbydayall", pbdaHandler)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 	http.ListenAndServe(config.Listen, Log(http.DefaultServeMux))
 }
