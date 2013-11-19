@@ -23,7 +23,7 @@ $(function () {
                     day: '%H:%M'
                 },
                 title: {
-                    text: "Time of Post (UTC Offset: "+currentime.getTimezoneOffset()/60+")"
+                    text: "Time of Post (UTC Offset: "+(-currentime.getTimezoneOffset()/60)+")"
                 }
             },
             yAxis: {
@@ -61,7 +61,8 @@ $(function () {
         $("#postsByDayAll").show();
         $('#postsByDayAll').highcharts({
             chart: {
-                type: 'area'
+                type: 'area',
+                zoomType: 'x'
             },
             title: {
                 text: 'Activity in channel over time'
