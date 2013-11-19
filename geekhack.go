@@ -118,8 +118,6 @@ func (g *Geekhack) UpdatePostByDayAll() ([][]int64, error) {
 		if err := rows.Scan(&date, &posts); err != nil {
 			return nil, err
 		}
-
-		fmt.Println(date, posts)
 		convTime, err := time.Parse("2006-01-02", date)
 		if err != nil {
 			return nil, err
