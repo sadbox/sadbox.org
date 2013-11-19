@@ -5,8 +5,6 @@ import (
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
@@ -43,7 +41,7 @@ type Geekhack struct {
 	CurseWords    map[string][]Tuple
 	TotalPosts    []Tuple
 	PostsByMinute []float64
-	PostByDayAll  [][]int
+	PostByDayAll  [][]int64
 	age           time.Time
 }
 
@@ -103,10 +101,10 @@ func (g *Geekhack) UpdateCurseWords() (map[string][]Tuple, error) {
 	return CurseWords, nil
 }
 
-func (g *Geekhack) UpdatePostByDayAll() ([][]int, error) {
+func (g *Geekhack) UpdatePostByDayAll() ([][]int64, error) {
 	var date string
 	var posts int
-	var returnValue [][]int
+	var returnValue [][]int64
 	rows, err := g.db.Query(postByDayAll)
 	if err != nil {
 		return nil, err
@@ -114,15 +112,11 @@ func (g *Geekhack) UpdatePostByDayAll() ([][]int, error) {
 	for rows.Next() {
 		rows.Scan(&date, &posts)
 		fmt.Println(date, posts)
-		appendValue := []int{}
-		for _, value := range strings.Split(date, "-") {
-			dateInt, err := strconv.Atoi(value)
-			if err != nil {
-				return nil, err
-			}
-			appendValue = append(appendValue, dateInt)
+		convTime, err := time.Parse("2006-01-02", date)
+		if err != nil {
+			return nil, err
 		}
-		returnValue = append(returnValue, append(appendValue, posts))
+		returnValue = append(returnValue, []int64{convTime.Unix() * 1000, int64(posts)})
 	}
 	return returnValue, nil
 }

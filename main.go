@@ -116,8 +116,8 @@ func pbdaHandler(w http.ResponseWriter, r *http.Request) {
 	geekhack.mutex.RLock()
 	defer geekhack.mutex.RUnlock()
 	jsonSource := struct {
-		Name string  `json:"name"`
-		Data [][]int `json:"data"`
+		Name string    `json:"name"`
+		Data [][]int64 `json:"data"`
 	}{
 		"Posts Per Day All",
 		geekhack.PostByDayAll,
