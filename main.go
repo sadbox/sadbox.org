@@ -171,7 +171,7 @@ func main() {
 	geekhack = NewGeekhack()
 	defer geekhack.db.Close()
 
-	//go geekhack.Update()
+	geekhack.Update()
 	go geekhack.Updater()
 
 	http.HandleFunc("/favicon.ico", serveStatic("./favicon.ico"))
@@ -182,6 +182,6 @@ func main() {
 	http.HandleFunc("/geekhack", geekhackHandler)
 	http.HandleFunc("/geekhack/postsbyminute", pbmHandler)
 	http.HandleFunc("/geekhack/postsbydayall", pbdaHandler)
-	http.Handle("/", http.FileServer(http.Dir("./static/")))
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 	log.Fatal(http.ListenAndServe(config.Listen, Log(http.DefaultServeMux)))
 }
