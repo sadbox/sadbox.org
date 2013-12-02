@@ -179,6 +179,7 @@ func (g *Geekhack) Update() {
 	PostsByDayAll, err := g.UpdatePostByDayAll()
 	if err != nil {
 		log.Println(err)
+		return
 	}
 	log.Println("PostsByDayAll updated in:", time.Since(start))
 
