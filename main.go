@@ -174,10 +174,9 @@ func main() {
 	geekhack.Update()
 	go geekhack.Updater()
 
-	http.HandleFunc("/favicon.ico", serveStatic("./favicon.ico"))
-	http.HandleFunc("/sitemap.xml", serveStatic("./sitemap.xml"))
+	http.HandleFunc("/favicon.ico", serveStatic("./static/favicon.ico"))
+	http.HandleFunc("/sitemap.xml", serveStatic("./static/sitemap.xml"))
 	http.HandleFunc("/", serveTemplate("main.html"))
-	http.HandleFunc("/status", serveTemplate("status.html"))
 	http.HandleFunc("/keyboards", keyboardHandler)
 	http.HandleFunc("/geekhack", geekhackHandler)
 	http.HandleFunc("/geekhack/postsbyminute", pbmHandler)
