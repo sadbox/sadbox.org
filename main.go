@@ -179,6 +179,7 @@ func main() {
 	http.HandleFunc("/", serveTemplate("main.html"))
 	http.HandleFunc("/keyboards", keyboardHandler)
 	http.HandleFunc("/geekhack", geekhackHandler)
+	http.Handle("/ghstats", http.RedirectHandler("/geekhack", http.StatusMovedPermanently))
 	http.HandleFunc("/geekhack/postsbyminute", pbmHandler)
 	http.HandleFunc("/geekhack/postsbydayall", pbdaHandler)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
