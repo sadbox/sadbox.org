@@ -2,9 +2,12 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
+
 	_ "github.com/go-sql-driver/mysql"
 	"log"
+	"net/http"
 	"sync"
 	"time"
 )
@@ -60,6 +63,77 @@ func NewGeekhack() *Geekhack {
 		CurseWords: make(map[string][]Tuple),
 		updateChan: make(chan bool, 3),
 		db:         db,
+	}
+}
+
+func (g *Geekhack) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	switch r.URL.Path {
+	case "/geekhack/":
+		g.Main(w, r)
+	case "/geekhack/postsbyminute":
+		g.pbmHandler(w, r)
+	case "/geekhack/postsbydayall":
+		g.pbdaHandler(w, r)
+	default:
+		http.NotFound(w, r)
+	}
+}
+
+func (g *Geekhack) Main(w http.ResponseWriter, r *http.Request) {
+	g.mutex.RLock()
+	defer func() {
+		g.mutex.RUnlock()
+		select {
+		case g.updateChan <- true:
+		default:
+		}
+	}()
+	if err := templates.ExecuteTemplate(w, "geekhack.html", g); err != nil {
+		log.Println(err)
+	}
+}
+
+func (g *Geekhack) pbmHandler(w http.ResponseWriter, r *http.Request) {
+	g.mutex.RLock()
+	defer g.mutex.RUnlock()
+	jsonSource := struct {
+		Name string    `json:"name"`
+		Data []float64 `json:"data"`
+	}{
+		"Posts Per Minute",
+		g.PostsByMinute,
+	}
+	jsonData, err := json.Marshal(jsonSource)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Error generating minute data", 500)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	written, err := w.Write(jsonData)
+	if written < len(jsonData) || err != nil {
+		log.Println("Error writing response to client")
+	}
+}
+
+func (g *Geekhack) pbdaHandler(w http.ResponseWriter, r *http.Request) {
+	g.mutex.RLock()
+	defer g.mutex.RUnlock()
+	jsonSource := struct {
+		Name string    `json:"name"`
+		Data [][]int64 `json:"data"`
+	}{
+		"Posts Per Day All",
+		g.PostByDayAll,
+	}
+	jsonData, err := json.Marshal(jsonSource)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Error generating day data", 500)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	written, err := w.Write(jsonData)
+	if written < len(jsonData) || err != nil {
+		log.Println("Error writing response to client")
 	}
 }
 

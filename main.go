@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"html/template"
@@ -76,64 +75,6 @@ func keyboardHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func geekhackHandler(w http.ResponseWriter, r *http.Request) {
-	geekhack.mutex.RLock()
-	defer func() {
-		geekhack.mutex.RUnlock()
-		select {
-		case geekhack.updateChan <- true:
-		default:
-		}
-	}()
-	if err := templates.ExecuteTemplate(w, "geekhack.html", geekhack); err != nil {
-		log.Println(err)
-	}
-}
-
-func pbmHandler(w http.ResponseWriter, r *http.Request) {
-	geekhack.mutex.RLock()
-	defer geekhack.mutex.RUnlock()
-	jsonSource := struct {
-		Name string    `json:"name"`
-		Data []float64 `json:"data"`
-	}{
-		"Posts Per Minute",
-		geekhack.PostsByMinute,
-	}
-	jsonData, err := json.Marshal(jsonSource)
-	if err != nil {
-		log.Println(err)
-		http.Error(w, "Error generating minute data", 500)
-	}
-	w.Header().Set("Content-Type", "application/json")
-	written, err := w.Write(jsonData)
-	if written < len(jsonData) || err != nil {
-		log.Println("Error writing response to client")
-	}
-}
-
-func pbdaHandler(w http.ResponseWriter, r *http.Request) {
-	geekhack.mutex.RLock()
-	defer geekhack.mutex.RUnlock()
-	jsonSource := struct {
-		Name string    `json:"name"`
-		Data [][]int64 `json:"data"`
-	}{
-		"Posts Per Day All",
-		geekhack.PostByDayAll,
-	}
-	jsonData, err := json.Marshal(jsonSource)
-	if err != nil {
-		log.Println(err)
-		http.Error(w, "Error generating day data", 500)
-	}
-	w.Header().Set("Content-Type", "application/json")
-	written, err := w.Write(jsonData)
-	if written < len(jsonData) || err != nil {
-		log.Println("Error writing response to client")
-	}
-}
-
 func serveStatic(filename string) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, filename)
@@ -178,10 +119,9 @@ func main() {
 	http.HandleFunc("/sitemap.xml", serveStatic("./static/sitemap.xml"))
 	http.HandleFunc("/", serveTemplate("main.html"))
 	http.HandleFunc("/keyboards", keyboardHandler)
-	http.HandleFunc("/geekhack", geekhackHandler)
+	http.Handle("/geekhack/", geekhack)
 	http.Handle("/ghstats", http.RedirectHandler("/geekhack", http.StatusMovedPermanently))
-	http.HandleFunc("/geekhack/postsbyminute", pbmHandler)
-	http.HandleFunc("/geekhack/postsbydayall", pbdaHandler)
+	http.Handle("/geekhack", http.RedirectHandler("/geekhack/", http.StatusMovedPermanently))
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 	log.Fatal(http.ListenAndServe(config.Listen, Log(http.DefaultServeMux)))
 }
