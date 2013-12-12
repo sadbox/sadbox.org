@@ -1,34 +1,31 @@
 package main
 
 import (
-	"encoding/xml"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io/ioutil"
 	"log"
+    "os"
 	"net/http"
 	"path"
-	"regexp"
 	"strings"
 )
 
 var (
-	templates  = template.Must(template.ParseFiles(getFiles("./views/", ".html")...))
-	fourOhFour = regexp.MustCompile("^/(status)?$")
-	config     Config
+	templates = template.Must(template.ParseFiles(getFiles("./views/", ".html")...))
+	config    Config
 )
 
 type Config struct {
 	DBConn   string
 	Listen   string
-	BadWords []BadWord `xml:">BadWord"`
-}
-
-type BadWord struct {
-	Word       string
-	Query      []string
-	Table      string
-	BuiltQuery string
+	BadWords []struct {
+		Word       string
+		Query      []string
+		Table      string
+		BuiltQuery string
+	}
 }
 
 func getFiles(folder, fileType string) []string {
@@ -43,20 +40,6 @@ func getFiles(folder, fileType string) []string {
 		}
 	}
 	return templateList
-}
-
-func serveTemplate(filename string) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		m := fourOhFour.FindStringSubmatch(r.URL.Path)
-		if m == nil {
-			http.NotFound(w, r)
-			return
-		}
-
-		if err := templates.ExecuteTemplate(w, filename, nil); err != nil {
-			log.Println(err)
-		}
-	}
 }
 
 type Keyboards struct {
@@ -89,13 +72,16 @@ func Log(handler http.Handler) http.Handler {
 }
 
 func main() {
-	xmlFile, err := ioutil.ReadFile("config.xml")
-	if err != nil {
-		log.Fatal(err)
-	}
-	if err = xml.Unmarshal(xmlFile, &config); err != nil {
-		log.Fatal(err)
-	}
+    configfile, err := os.Open("config.json")
+    if err != nil {
+        log.Fatal(err)
+    }
+    decoder := json.NewDecoder(configfile)
+    err = decoder.Decode(&config)
+    if err != nil {
+        log.Fatal(err)
+    }
+
 
 	log.Println("Starting sadbox.org on", config.Listen)
 
@@ -115,21 +101,30 @@ func main() {
 	geekhack.Update()
 	go geekhack.Updater()
 
-    // These files have to be here
+	// These files have to be here
 	http.HandleFunc("/favicon.ico", serveStatic("./static/favicon.ico"))
 	http.HandleFunc("/sitemap.xml", serveStatic("./static/sitemap.xml"))
 
-    // The plain-jane stuff I serve up
-	http.HandleFunc("/", serveTemplate("main.html"))
+	// The plain-jane stuff I serve up
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" {
+			http.NotFound(w, r)
+			return
+		}
+
+		if err := templates.ExecuteTemplate(w, "main.html", nil); err != nil {
+			log.Println(err)
+		}
+	})
 	http.HandleFunc("/keyboards", keyboardHandler)
 
-    // Geekhack stats! the geekhack struct will handle the routing to sub-things
+	// Geekhack stats! the geekhack struct will handle the routing to sub-things
 	http.Handle("/geekhack/", geekhack)
-    // Redirects to the right URL so I don't break old links
+	// Redirects to the right URL so I don't break old links
 	http.Handle("/ghstats", http.RedirectHandler("/geekhack/", http.StatusMovedPermanently))
 	http.Handle("/geekhack", http.RedirectHandler("/geekhack/", http.StatusMovedPermanently))
 
-    // The rest of the static files
+	// The rest of the static files
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 
 	log.Fatal(http.ListenAndServe(config.Listen, Log(http.DefaultServeMux)))
