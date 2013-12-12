@@ -115,13 +115,22 @@ func main() {
 	geekhack.Update()
 	go geekhack.Updater()
 
+    // These files have to be here
 	http.HandleFunc("/favicon.ico", serveStatic("./static/favicon.ico"))
 	http.HandleFunc("/sitemap.xml", serveStatic("./static/sitemap.xml"))
+
+    // The plain-jane stuff I serve up
 	http.HandleFunc("/", serveTemplate("main.html"))
 	http.HandleFunc("/keyboards", keyboardHandler)
+
+    // Geekhack stats! the geekhack struct will handle the routing to sub-things
 	http.Handle("/geekhack/", geekhack)
-	http.Handle("/ghstats", http.RedirectHandler("/geekhack", http.StatusMovedPermanently))
+    // Redirects to the right URL so I don't break old links
+	http.Handle("/ghstats", http.RedirectHandler("/geekhack/", http.StatusMovedPermanently))
 	http.Handle("/geekhack", http.RedirectHandler("/geekhack/", http.StatusMovedPermanently))
+
+    // The rest of the static files
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
+
 	log.Fatal(http.ListenAndServe(config.Listen, Log(http.DefaultServeMux)))
 }
