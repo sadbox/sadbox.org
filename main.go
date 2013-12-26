@@ -66,7 +66,12 @@ func serveStatic(filename string) func(http.ResponseWriter, *http.Request) {
 
 func Log(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("%s %s %s", r.RemoteAddr, r.Method, r.URL)
+        ForwardedFor := r.Header.Get("X-Forwarded-For")
+        if ForwardedFor == "" {
+            log.Printf("%s %s %s", r.RemoteAddr, r.Method, r.URL)
+        } else {
+            log.Printf("%s %s %s", ForwardedFor, r.Method, r.URL)
+        }
 		handler.ServeHTTP(w, r)
 	})
 }
