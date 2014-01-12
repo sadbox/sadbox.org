@@ -6,8 +6,8 @@ import (
 	"html/template"
 	"io/ioutil"
 	"log"
-    "os"
 	"net/http"
+	"os"
 	"path"
 	"strings"
 )
@@ -66,27 +66,26 @@ func serveStatic(filename string) func(http.ResponseWriter, *http.Request) {
 
 func Log(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        ForwardedFor := r.Header.Get("X-Forwarded-For")
-        if ForwardedFor == "" {
-            log.Printf("%s %s %s", r.RemoteAddr, r.Method, r.URL)
-        } else {
-            log.Printf("%s %s %s", ForwardedFor, r.Method, r.URL)
-        }
+		ForwardedFor := r.Header.Get("X-Forwarded-For")
+		if ForwardedFor == "" {
+			log.Printf("%s %s %s", r.RemoteAddr, r.Method, r.URL)
+		} else {
+			log.Printf("%s %s %s", ForwardedFor, r.Method, r.URL)
+		}
 		handler.ServeHTTP(w, r)
 	})
 }
 
 func main() {
-    configfile, err := os.Open("config.json")
-    if err != nil {
-        log.Fatal(err)
-    }
-    decoder := json.NewDecoder(configfile)
-    err = decoder.Decode(&config)
-    if err != nil {
-        log.Fatal(err)
-    }
-
+	configfile, err := os.Open("config.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	decoder := json.NewDecoder(configfile)
+	err = decoder.Decode(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	log.Println("Starting sadbox.org on", config.Listen)
 
