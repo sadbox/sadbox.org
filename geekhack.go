@@ -287,8 +287,7 @@ func (g *Geekhack) Update() {
 		log.Println(err)
 		return
 	}
-	dates, posts := unzip(PostsByDayAll)
-	PostsByDayAllSmoothed := zip(dates, movingAverage(posts, 10))
+	PostsByDayAllSmoothed := averageWithTime(PostsByDayAll)
 	log.Println("PostsByDayAll updated in:", time.Since(start))
 
 	// Update the struct
@@ -305,19 +304,16 @@ func (g *Geekhack) Update() {
 	// Finish update, need to unlock it
 }
 
-func unzip(original [][]int64) ([]int64, []float64) {
+func averageWithTime(original [][]int64) [][]int64 {
 	first := make([]int64, len(original))
 	second := make([]float64, len(original))
 	for key, value := range original {
 		first[key] = value[0]
 		second[key] = float64(value[1])
 	}
-	return first, second
-}
-
-func zip(first []int64, second []float64) [][]int64 {
-	result := make([][]int64, len(first))
-	for i := 0; i < len(first); i++ {
+	second = movingAverage(second, 10)
+	result := make([][]int64, len(original))
+	for i := 0; i < len(original); i++ {
 		result[i] = []int64{first[i], int64(second[i])}
 	}
 	return result
