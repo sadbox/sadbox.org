@@ -32,11 +32,10 @@ const (
 	topTenWords = `select Nick, Posts from %s order by Posts desc limit 10;`
 )
 
-var geekhack *Geekhack
-
 type Geekhack struct {
 	updateChan chan bool
 	db         *sql.DB
+	config     Config
 
 	mutex         sync.RWMutex // Protects:
 	PostsByDay    []Tuple
@@ -52,7 +51,7 @@ type Tuple struct {
 	Count int
 }
 
-func NewGeekhack() (*Geekhack, error) {
+func NewGeekhack(config Config) (*Geekhack, error) {
 	db, err := sql.Open("mysql", config.DBConn)
 	if err != nil {
 		return nil, err
@@ -63,11 +62,17 @@ func NewGeekhack() (*Geekhack, error) {
 		return nil, err
 	}
 
-	return &Geekhack{
+	geekhack := &Geekhack{
 		CurseWords: make(map[string][]Tuple),
 		updateChan: make(chan bool, 3),
 		db:         db,
-	}, nil
+		config:     config,
+	}
+
+	geekhack.Update()
+	go geekhack.Updater()
+
+	return geekhack, nil
 }
 
 func (g *Geekhack) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -170,7 +175,7 @@ func (g *Geekhack) runQuery(query string) ([]Tuple, error) {
 
 func (g *Geekhack) UpdateCurseWords() (map[string][]Tuple, error) {
 	CurseWords := make(map[string][]Tuple)
-	for _, word := range config.BadWords {
+	for _, word := range g.config.BadWords {
 		_, err := g.db.Exec(fmt.Sprintf(updateWords, word.Table, word.BuiltQuery))
 		if err != nil {
 			return nil, err

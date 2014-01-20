@@ -12,10 +12,7 @@ import (
 	"strings"
 )
 
-var (
-	templates = template.Must(template.ParseFiles(getFiles("./views/", ".html")...))
-	config    Config
-)
+var templates = template.Must(template.ParseGlob("./views/*.html"))
 
 type Config struct {
 	DBConn   string
@@ -81,8 +78,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	decoder := json.NewDecoder(configfile)
-	err = decoder.Decode(&config)
+	var config Config
+	err = json.NewDecoder(configfile).Decode(&config)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -99,14 +96,11 @@ func main() {
 		config.BadWords[outerIndex] = word
 	}
 
-	geekhack, err = NewGeekhack()
+	geekhack, err := NewGeekhack(config)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer geekhack.db.Close()
-
-	geekhack.Update()
-	go geekhack.Updater()
 
 	// These files have to be here
 	http.HandleFunc("/favicon.ico", serveStatic("./static/favicon.ico"))
