@@ -169,6 +169,10 @@ func main() {
 	}
 
 	geekhack = NewGeekhack()
+	err = geekhack.db.Ping()
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer geekhack.db.Close()
 
 	geekhack.Update()
