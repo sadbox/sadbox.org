@@ -99,8 +99,7 @@ func main() {
 		config.BadWords[outerIndex] = word
 	}
 
-	geekhack = NewGeekhack()
-	err = geekhack.db.Ping()
+	geekhack, err = NewGeekhack()
 	if err != nil {
 		log.Fatal(err)
 	}

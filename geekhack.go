@@ -52,17 +52,22 @@ type Tuple struct {
 	Count int
 }
 
-func NewGeekhack() *Geekhack {
+func NewGeekhack() (*Geekhack, error) {
 	db, err := sql.Open("mysql", config.DBConn)
 	if err != nil {
-		panic(err)
+		return nil, err
+	}
+
+	err = db.Ping()
+	if err != nil {
+		return nil, err
 	}
 
 	return &Geekhack{
 		CurseWords: make(map[string][]Tuple),
 		updateChan: make(chan bool, 3),
 		db:         db,
-	}
+	}, nil
 }
 
 func (g *Geekhack) ServeHTTP(w http.ResponseWriter, r *http.Request) {
