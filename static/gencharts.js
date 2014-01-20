@@ -1,7 +1,7 @@
 $(function () {
      $("#spinner").show();
      $("#spinnerTwo").show();
-     $.getJSON('https://sadbox.org/geekhack/postsbyminute', function (data) {
+     $.getJSON('/geekhack/postsbyminute', function (data) {
         Highcharts.setOptions({
             global : {
                 useUTC : false
@@ -61,7 +61,7 @@ $(function () {
             series: [data]
         });
     });
-     $.getJSON('https://sadbox.org/geekhack/postsbydayall', function (data) {
+     $.getJSON('/geekhack/postsbydayall', function (data) {
         $("#spinnerTwo").hide();
         $("#postsByDayAll").show();
         $('#postsByDayAll').highcharts({

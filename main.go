@@ -2,34 +2,30 @@ package main
 
 import (
 	"encoding/json"
-	"encoding/xml"
 	"fmt"
 	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"path"
-	"regexp"
 	"strings"
 )
 
 var (
-	templates  = template.Must(template.ParseFiles(getFiles("./views/", ".html")...))
-	fourOhFour = regexp.MustCompile("^/(status)?$")
-	config     Config
+	templates = template.Must(template.ParseFiles(getFiles("./views/", ".html")...))
+	config    Config
 )
 
 type Config struct {
 	DBConn   string
 	Listen   string
-	BadWords []BadWord `xml:">BadWord"`
-}
-
-type BadWord struct {
-	Word       string
-	Query      []string
-	Table      string
-	BuiltQuery string
+	BadWords []struct {
+		Word       string
+		Query      []string
+		Table      string
+		BuiltQuery string
+	}
 }
 
 func getFiles(folder, fileType string) []string {
@@ -44,20 +40,6 @@ func getFiles(folder, fileType string) []string {
 		}
 	}
 	return templateList
-}
-
-func serveTemplate(filename string) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		m := fourOhFour.FindStringSubmatch(r.URL.Path)
-		if m == nil {
-			http.NotFound(w, r)
-			return
-		}
-
-		if err := templates.ExecuteTemplate(w, filename, nil); err != nil {
-			log.Println(err)
-		}
-	}
 }
 
 type Keyboards struct {
@@ -76,64 +58,6 @@ func keyboardHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func geekhackHandler(w http.ResponseWriter, r *http.Request) {
-	geekhack.mutex.RLock()
-	defer func() {
-		geekhack.mutex.RUnlock()
-		select {
-		case geekhack.updateChan <- true:
-		default:
-		}
-	}()
-	if err := templates.ExecuteTemplate(w, "geekhack.html", geekhack); err != nil {
-		log.Println(err)
-	}
-}
-
-func pbmHandler(w http.ResponseWriter, r *http.Request) {
-	geekhack.mutex.RLock()
-	defer geekhack.mutex.RUnlock()
-	jsonSource := struct {
-		Name string    `json:"name"`
-		Data []float64 `json:"data"`
-	}{
-		"Posts Per Minute",
-		geekhack.PostsByMinute,
-	}
-	jsonData, err := json.Marshal(jsonSource)
-	if err != nil {
-		log.Println(err)
-		http.Error(w, "Error generating minute data", 500)
-	}
-	w.Header().Set("Content-Type", "application/json")
-	written, err := w.Write(jsonData)
-	if written < len(jsonData) || err != nil {
-		log.Println("Error writing response to client")
-	}
-}
-
-func pbdaHandler(w http.ResponseWriter, r *http.Request) {
-	geekhack.mutex.RLock()
-	defer geekhack.mutex.RUnlock()
-	jsonSource := struct {
-		Name string    `json:"name"`
-		Data [][]int64 `json:"data"`
-	}{
-		"Posts Per Day All",
-		geekhack.PostByDayAll,
-	}
-	jsonData, err := json.Marshal(jsonSource)
-	if err != nil {
-		log.Println(err)
-		http.Error(w, "Error generating day data", 500)
-	}
-	w.Header().Set("Content-Type", "application/json")
-	written, err := w.Write(jsonData)
-	if written < len(jsonData) || err != nil {
-		log.Println("Error writing response to client")
-	}
-}
-
 func serveStatic(filename string) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, filename)
@@ -142,17 +66,24 @@ func serveStatic(filename string) func(http.ResponseWriter, *http.Request) {
 
 func Log(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("%s %s %s", r.RemoteAddr, r.Method, r.URL)
+		ForwardedFor := r.Header.Get("X-Forwarded-For")
+		if ForwardedFor == "" {
+			log.Printf("%s %s %s", r.RemoteAddr, r.Method, r.URL)
+		} else {
+			log.Printf("%s %s %s", ForwardedFor, r.Method, r.URL)
+		}
 		handler.ServeHTTP(w, r)
 	})
 }
 
 func main() {
-	xmlFile, err := ioutil.ReadFile("config.xml")
+	configfile, err := os.Open("config.json")
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err = xml.Unmarshal(xmlFile, &config); err != nil {
+	decoder := json.NewDecoder(configfile)
+	err = decoder.Decode(&config)
+	if err != nil {
 		log.Fatal(err)
 	}
 
@@ -178,13 +109,31 @@ func main() {
 	geekhack.Update()
 	go geekhack.Updater()
 
+	// These files have to be here
 	http.HandleFunc("/favicon.ico", serveStatic("./static/favicon.ico"))
 	http.HandleFunc("/sitemap.xml", serveStatic("./static/sitemap.xml"))
-	http.HandleFunc("/", serveTemplate("main.html"))
+
+	// The plain-jane stuff I serve up
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" {
+			http.NotFound(w, r)
+			return
+		}
+
+		if err := templates.ExecuteTemplate(w, "main.html", nil); err != nil {
+			log.Println(err)
+		}
+	})
 	http.HandleFunc("/keyboards", keyboardHandler)
-	http.HandleFunc("/geekhack", geekhackHandler)
-	http.HandleFunc("/geekhack/postsbyminute", pbmHandler)
-	http.HandleFunc("/geekhack/postsbydayall", pbdaHandler)
+
+	// Geekhack stats! the geekhack struct will handle the routing to sub-things
+	http.Handle("/geekhack/", geekhack)
+	// Redirects to the right URL so I don't break old links
+	http.Handle("/ghstats", http.RedirectHandler("/geekhack/", http.StatusMovedPermanently))
+	http.Handle("/geekhack", http.RedirectHandler("/geekhack/", http.StatusMovedPermanently))
+
+	// The rest of the static files
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
+
 	log.Fatal(http.ListenAndServe(config.Listen, Log(http.DefaultServeMux)))
 }
