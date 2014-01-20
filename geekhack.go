@@ -37,13 +37,15 @@ type Geekhack struct {
 	db         *sql.DB
 	config     Config
 
-	mutex         sync.RWMutex // Protects:
-	PostsByDay    []Tuple
-	CurseWords    map[string][]Tuple
-	TotalPosts    []Tuple
-	PostsByMinute []float64
-	PostByDayAll  [][]int64
-	age           time.Time
+	mutex                 sync.RWMutex // Protects:
+	PostsByDay            []Tuple
+	CurseWords            map[string][]Tuple
+	TotalPosts            []Tuple
+	PostsByMinute         []float64
+	PostsByMinuteSmoothed []float64
+	PostByDayAll          [][]int64
+	PostByDayAllSmoothed  [][]int64
+	age                   time.Time
 }
 
 type Tuple struct {
@@ -105,12 +107,23 @@ func (g *Geekhack) Main(w http.ResponseWriter, r *http.Request) {
 func (g *Geekhack) pbmHandler(w http.ResponseWriter, r *http.Request) {
 	g.mutex.RLock()
 	defer g.mutex.RUnlock()
-	jsonSource := struct {
+	type returnStruct struct {
+		Type string    `json:"type,omitempty"`
 		Name string    `json:"name"`
 		Data []float64 `json:"data"`
-	}{
-		"Posts Per Minute",
-		g.PostsByMinute,
+	}
+
+	jsonSource := []returnStruct{
+		returnStruct{
+			"",
+			"Posts Per Minute",
+			g.PostsByMinute,
+		},
+		returnStruct{
+			"spline",
+			"Posts Per Minute Smoothed",
+			g.PostsByMinuteSmoothed,
+		},
 	}
 	jsonData, err := json.Marshal(jsonSource)
 	if err != nil {
@@ -127,12 +140,22 @@ func (g *Geekhack) pbmHandler(w http.ResponseWriter, r *http.Request) {
 func (g *Geekhack) pbdaHandler(w http.ResponseWriter, r *http.Request) {
 	g.mutex.RLock()
 	defer g.mutex.RUnlock()
-	jsonSource := struct {
+	type returnStruct struct {
+		Type string    `json:"type,omitempty"`
 		Name string    `json:"name"`
 		Data [][]int64 `json:"data"`
-	}{
-		"Posts Per Day All",
-		g.PostByDayAll,
+	}
+	jsonSource := []returnStruct{
+		returnStruct{
+			Type: "",
+			Name: "Posts Per Day All",
+			Data: g.PostByDayAll,
+		},
+		returnStruct{
+			Type: "spline",
+			Name: "Posts Per Day All Smoothed",
+			Data: g.PostByDayAllSmoothed,
+		},
 	}
 	jsonData, err := json.Marshal(jsonSource)
 	if err != nil {
@@ -255,7 +278,7 @@ func (g *Geekhack) Update() {
 		log.Println(err)
 		return
 	}
-	PostsByMinute = movingAverage(PostsByMinute, 10)
+	PostsByMinuteSmoothed := movingAverage(PostsByMinute, 10)
 	log.Println("PostsByMinute updated in:", time.Since(start))
 
 	start = time.Now()
@@ -264,6 +287,8 @@ func (g *Geekhack) Update() {
 		log.Println(err)
 		return
 	}
+	dates, posts := unzip(PostsByDayAll)
+	PostsByDayAllSmoothed := zip(dates, movingAverage(posts, 10))
 	log.Println("PostsByDayAll updated in:", time.Since(start))
 
 	// Update the struct
@@ -272,10 +297,30 @@ func (g *Geekhack) Update() {
 	g.TotalPosts = TotalPosts
 	g.CurseWords = CurseWords
 	g.PostsByMinute = PostsByMinute
+	g.PostsByMinuteSmoothed = PostsByMinuteSmoothed
 	g.PostByDayAll = PostsByDayAll
+	g.PostByDayAllSmoothed = PostsByDayAllSmoothed
 	g.age = time.Now()
 	g.mutex.Unlock()
 	// Finish update, need to unlock it
+}
+
+func unzip(original [][]int64) ([]int64, []float64) {
+	first := make([]int64, len(original))
+	second := make([]float64, len(original))
+	for key, value := range original {
+		first[key] = value[0]
+		second[key] = float64(value[1])
+	}
+	return first, second
+}
+
+func zip(first []int64, second []float64) [][]int64 {
+	result := make([][]int64, len(first))
+	for i := 0; i < len(first); i++ {
+		result[i] = []int64{first[i], int64(second[i])}
+	}
+	return result
 }
 
 func movingAverage(input []float64, size int) []float64 {

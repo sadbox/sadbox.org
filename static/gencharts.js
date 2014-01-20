@@ -56,9 +56,21 @@ $(function () {
                             }
                         }
                     }
+                },
+                spline: {
+                    pointStart: Date.UTC(0,0,0),
+                    pointInterval: 60 * 1000,
+                    marker: {
+                        enabled: false,
+                        states: {
+                            hover: {
+                                enabled: false
+                            }
+                        }
+                    }
                 }
             },
-            series: [data]
+            series: data
         });
     });
      $.getJSON('/geekhack/postsbydayall', function (data) {
@@ -106,9 +118,19 @@ $(function () {
                             }
                         }
                     }
+                },
+                spline: {
+                    marker: {
+                        enabled: false,
+                        states: {
+                            hover: {
+                                enabled: false
+                            }
+                        }
+                    }
                 }
             },
-            series: [data]
+            series: data
         });
     });
 });
