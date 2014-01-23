@@ -278,7 +278,7 @@ func (g *Geekhack) Update() {
 		log.Println(err)
 		return
 	}
-	PostsByMinuteSmoothed := movingAverage(PostsByMinute, 10)
+	PostsByMinuteSmoothed := movingAverage(movingAverage(movingAverage(PostsByMinute, 20), 10), 5)
 	log.Println("PostsByMinute updated in:", time.Since(start))
 
 	start = time.Now()
@@ -311,7 +311,7 @@ func averageWithTime(original [][]int64) [][]int64 {
 		first[key] = value[0]
 		second[key] = float64(value[1])
 	}
-	second = movingAverage(second, 10)
+	second = movingAverage(movingAverage(movingAverage(second, 20), 10), 5)
 	result := make([][]int64, len(original))
 	for i := 0; i < len(original); i++ {
 		result[i] = []int64{first[i], int64(second[i])}
