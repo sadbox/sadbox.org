@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-var templates = template.Must(template.ParseGlob("./views/*.html"))
+var templates = template.Must(template.ParseGlob("./views/*.tmpl"))
 
 type Config struct {
 	DBConn   string
@@ -50,7 +50,7 @@ func keyboardHandler(w http.ResponseWriter, r *http.Request) {
 		dir, file := path.Split(keyboard)
 		matchedBoards.Keyboards[path.Join("/", dir, file)] = path.Join("/", dir, "thumbs", file)
 	}
-	if err := templates.ExecuteTemplate(w, "keyboards.html", matchedBoards); err != nil {
+	if err := templates.ExecuteTemplate(w, "keyboards.tmpl", matchedBoards); err != nil {
 		log.Println(err)
 	}
 }
@@ -113,7 +113,7 @@ func main() {
 			return
 		}
 
-		if err := templates.ExecuteTemplate(w, "main.html", nil); err != nil {
+		if err := templates.ExecuteTemplate(w, "main.tmpl", nil); err != nil {
 			log.Println(err)
 		}
 	})

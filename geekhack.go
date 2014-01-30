@@ -99,7 +99,7 @@ func (g *Geekhack) Main(w http.ResponseWriter, r *http.Request) {
 		default:
 		}
 	}()
-	if err := templates.ExecuteTemplate(w, "geekhack.html", g); err != nil {
+	if err := templates.ExecuteTemplate(w, "geekhack.tmpl", g); err != nil {
 		log.Println(err)
 	}
 }
