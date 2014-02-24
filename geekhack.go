@@ -190,7 +190,6 @@ func (g *Geekhack) UpdateCurseWords() (map[string][]Tuple, error) {
 		if word == "Nick" {
 			continue
 		}
-		fmt.Printf(topTenWords, word)
 		tuple, err := g.runQuery(fmt.Sprintf(topTenWords, word))
 		if err != nil {
 			return nil, err
