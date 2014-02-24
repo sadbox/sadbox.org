@@ -88,6 +88,8 @@ func main() {
 	// These files have to be here
 	http.HandleFunc("/favicon.ico", serveStatic("./static/favicon.ico"))
 	http.HandleFunc("/sitemap.xml", serveStatic("./static/sitemap.xml"))
+	http.HandleFunc("/robots.txt", serveStatic("./static/robots.txt"))
+	http.HandleFunc("/humans.txt", serveStatic("./static/humans.txt"))
 
 	// The plain-jane stuff I serve up
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
