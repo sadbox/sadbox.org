@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -15,14 +14,8 @@ import (
 var templates = template.Must(template.ParseGlob("./views/*.tmpl"))
 
 type Config struct {
-	DBConn   string
-	Listen   string
-	BadWords []struct {
-		Word       string
-		Query      []string
-		Table      string
-		BuiltQuery string
-	}
+	DBConn string
+	Listen string
 }
 
 func getFiles(folder, fileType string) []string {
@@ -85,16 +78,6 @@ func main() {
 	}
 
 	log.Println("Starting sadbox.org on", config.Listen)
-
-	for outerIndex, word := range config.BadWords {
-		for innerIndex, searchTerm := range word.Query {
-			word.BuiltQuery = word.BuiltQuery + fmt.Sprintf(`ROUND((LENGTH(message) - LENGTH(REPLACE(LOWER(message), "%[1]s", "")))/LENGTH("%[1]s"))`, searchTerm)
-			if innerIndex != len(word.Query)-1 {
-				word.BuiltQuery = word.BuiltQuery + "+"
-			}
-		}
-		config.BadWords[outerIndex] = word
-	}
 
 	geekhack, err := NewGeekhack(config)
 	if err != nil {

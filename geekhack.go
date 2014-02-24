@@ -23,19 +23,12 @@ const (
 		` date, count(RID)/(SELECT DATEDIFF(NOW(), (SELECT MIN(Time)` +
 		` from messages where channel = '#geekhack'))) as count from` +
 		` messages where channel ='#geekhack' group by date order by date) as subquery;`
-	updateWords = `REPLACE INTO %[1]s
-    select newfucks.Nick, newfucks.Posts + (select COALESCE(%[1]s.Posts, 0)), NOW() from 
-    (select Nick, SUM(Posts) as Posts from (select Nick, %[2]s as Posts from messages where channel = '#geekhack' and Time > (SELECT COALESCE((select MAX(Updated) from %[1]s), (select MIN(Time) from messages)))) as blah group by Nick having Posts > 0) as newfucks
-    LEFT OUTER JOIN 
-    %[1]s
-    ON newfucks.Nick = %[1]s.Nick;`
-	topTenWords = `select Nick, Posts from %s order by Posts desc limit 10;`
+	topTenWords = `select Nick, %[1]s from Words order by %[1]s desc limit 10;`
 )
 
 type Geekhack struct {
-	updateChan chan bool
-	db         *sql.DB
-	config     Config
+	db     *sql.DB
+	config Config
 
 	mutex                 sync.RWMutex // Protects:
 	PostsByDay            []Tuple
@@ -66,7 +59,6 @@ func NewGeekhack(config Config) (*Geekhack, error) {
 
 	geekhack := &Geekhack{
 		CurseWords: make(map[string][]Tuple),
-		updateChan: make(chan bool, 3),
 		db:         db,
 		config:     config,
 	}
@@ -92,13 +84,7 @@ func (g *Geekhack) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (g *Geekhack) Main(w http.ResponseWriter, r *http.Request) {
 	g.mutex.RLock()
-	defer func() {
-		g.mutex.RUnlock()
-		select {
-		case g.updateChan <- true:
-		default:
-		}
-	}()
+	defer g.mutex.RUnlock()
 	if err := templates.ExecuteTemplate(w, "geekhack.tmpl", g); err != nil {
 		log.Println(err)
 	}
@@ -169,12 +155,6 @@ func (g *Geekhack) pbdaHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (g *Geekhack) shouldUpdate() bool {
-	g.mutex.RLock()
-	defer g.mutex.RUnlock()
-	return time.Since(g.age).Minutes() > 2
-}
-
 func (g *Geekhack) runQuery(query string) ([]Tuple, error) {
 	var nick string
 	var posts int
@@ -198,16 +178,24 @@ func (g *Geekhack) runQuery(query string) ([]Tuple, error) {
 
 func (g *Geekhack) UpdateCurseWords() (map[string][]Tuple, error) {
 	CurseWords := make(map[string][]Tuple)
-	for _, word := range g.config.BadWords {
-		_, err := g.db.Exec(fmt.Sprintf(updateWords, word.Table, word.BuiltQuery))
+	query, err := g.db.Query(`SELECT * FROM Words LIMIT 1`)
+	if err != nil {
+		return nil, err
+	}
+	words, err := query.Columns()
+	if err != nil {
+		return nil, err
+	}
+	for _, word := range words {
+		if word == "Nick" {
+			continue
+		}
+		fmt.Printf(topTenWords, word)
+		tuple, err := g.runQuery(fmt.Sprintf(topTenWords, word))
 		if err != nil {
 			return nil, err
 		}
-		tuple, err := g.runQuery(fmt.Sprintf(topTenWords, word.Table))
-		if err != nil {
-			return nil, err
-		}
-		CurseWords[word.Word] = tuple
+		CurseWords[word] = tuple
 	}
 	return CurseWords, nil
 }
@@ -342,9 +330,8 @@ func movingAverage(input []float64, size int) []float64 {
 }
 
 func (g *Geekhack) Updater() {
-	for <-g.updateChan {
-		if g.shouldUpdate() {
-			g.Update()
-		}
+	ticker := time.Tick(2 * time.Minute)
+	for _ = range ticker {
+		g.Update()
 	}
 }
