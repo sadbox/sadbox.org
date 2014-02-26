@@ -23,7 +23,7 @@ const (
 		` date, count(RID)/(SELECT DATEDIFF(NOW(), (SELECT MIN(Time)` +
 		` from messages where channel = '#geekhack'))) as count from` +
 		` messages where channel ='#geekhack' group by date order by date) as subquery;`
-	topTenWords = `select Nick, %[1]s from Words order by %[1]s desc limit 10;`
+	topTenWords = `select Nick, ` + "`" + `%[1]s` + "`" + ` from Words order by ` + "`" + `%[1]s` + "`" + ` desc limit 10;`
 )
 
 type Geekhack struct {
