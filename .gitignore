@@ -32,3 +32,4 @@ _testmain.go
 /gentables/gentables
 /config.xml
 /config.json
+/deploy.sh
