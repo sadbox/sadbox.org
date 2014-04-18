@@ -182,6 +182,7 @@ func (g *Geekhack) UpdateCurseWords() (map[string][]Tuple, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer query.Close()
 	words, err := query.Columns()
 	if err != nil {
 		return nil, err
