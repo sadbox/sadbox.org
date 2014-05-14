@@ -11,7 +11,8 @@ import (
 	"strings"
 )
 
-var templates = template.Must(template.ParseGlob("./views/*.tmpl"))
+var templates = template.Must(template.New("").Funcs(template.FuncMap{"add":
+                    func(a, b int) int { return a + b }}).ParseGlob("./views/*.tmpl"))
 
 type Config struct {
 	DBConn string

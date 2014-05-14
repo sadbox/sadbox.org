@@ -13,7 +13,7 @@
                 <table class="table table-condensed table-hover table-bordered">
                     {{range $index, $tuple := .TotalPosts}}
                         <tr>
-                        <td>{{$index}}</td>
+                        <td>{{add $index 1}}</td>
                         <td>{{$tuple.Name}}</td>
                         <td>{{$tuple.Count}}</td>
                         </tr>
@@ -27,7 +27,7 @@
                 <table class="table table-condensed table-hover table-bordered">
                     {{range $index, $tuple := .PostsByDay}}
                         <tr>
-                        <td>{{$index}}</td>
+                        <td>{{add $index 1}}</td>
                         <td>{{$tuple.Name}}</td>
                         <td>{{$tuple.Count}}</td>
                         </tr>
@@ -45,7 +45,7 @@
                     <table class="table table-condensed table-hover table-bordered">
                         {{range $index, $innertuple := $tuple}}
                             <tr>
-                            <td>{{$index}}</td>
+                            <td>{{add $index 1}}</td>
                             <td>{{$innertuple.Name}}</td>
                             <td>{{$innertuple.Count}}</td>
                             </tr>
