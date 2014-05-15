@@ -63,7 +63,7 @@ func NewGeekhack(config Config) (*Geekhack, error) {
 		config:     config,
 	}
 
-	geekhack.Update()
+	go geekhack.Update()
 	go geekhack.Updater()
 
 	return geekhack, nil
