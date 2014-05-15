@@ -91,6 +91,7 @@ func main() {
 	http.HandleFunc("/sitemap.xml", serveStatic("./static/sitemap.xml"))
 	http.HandleFunc("/robots.txt", serveStatic("./static/robots.txt"))
 	http.HandleFunc("/humans.txt", serveStatic("./static/humans.txt"))
+	http.HandleFunc("/mu-fea81392-5746180a-5e50de1d-fb4a7b05.txt", serveStatic("./static/blitz.txt"))
 
 	// The plain-jane stuff I serve up
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
