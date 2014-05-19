@@ -52,7 +52,7 @@ func NewGeekhack(config Config) (*Geekhack, error) {
 		return nil, err
 	}
 
-	err = db.Ping()
+	//err = db.Ping()
 	if err != nil {
 		return nil, err
 	}

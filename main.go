@@ -8,15 +8,18 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"runtime"
 	"strings"
+
+	"github.com/spacemonkeygo/openssl"
 )
 
-var templates = template.Must(template.New("").Funcs(template.FuncMap{"add":
-                    func(a, b int) int { return a + b }}).ParseGlob("./views/*.tmpl"))
+var templates = template.Must(template.New("").Funcs(template.FuncMap{"add": func(a, b int) int { return a + b }}).ParseGlob("./views/*.tmpl"))
 
 type Config struct {
-	DBConn string
-	Listen string
+	DBConn   string
+	CertFile string
+	KeyFile  string
 }
 
 func getFiles(folder, fileType string) []string {
@@ -68,6 +71,7 @@ func Log(handler http.Handler) http.Handler {
 }
 
 func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	configfile, err := os.Open("config.json")
 	if err != nil {
 		log.Fatal(err)
@@ -78,7 +82,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	log.Println("Starting sadbox.org on", config.Listen)
+	log.Println("Starting sadbox.org")
 
 	geekhack, err := NewGeekhack(config)
 	if err != nil {
@@ -115,5 +119,10 @@ func main() {
 	// The rest of the static files
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 
-	log.Fatal(http.ListenAndServe(config.Listen, Log(http.DefaultServeMux)))
+	http.Handle("/znc", http.RedirectHandler("https://sadbox.org:6697", http.StatusMovedPermanently))
+
+	go func() { log.Fatal(http.ListenAndServe(":http", Log(http.DefaultServeMux))) }()
+
+	log.Fatal(openssl.ListenAndServeTLS(":https", config.CertFile,
+		config.KeyFile, Log(http.DefaultServeMux)))
 }
