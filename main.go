@@ -11,7 +11,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/spacemonkeygo/openssl"
+//	"github.com/spacemonkeygo/openssl"
 )
 
 var templates = template.Must(template.New("").Funcs(template.FuncMap{"add": func(a, b int) int { return a + b }}).ParseGlob("./views/*.tmpl"))
@@ -123,6 +123,6 @@ func main() {
 
 	go func() { log.Fatal(http.ListenAndServe(":http", Log(http.DefaultServeMux))) }()
 
-	log.Fatal(openssl.ListenAndServeTLS(":https", config.CertFile,
+	log.Fatal(http.ListenAndServeTLS(":https", config.CertFile,
 		config.KeyFile, Log(http.DefaultServeMux)))
 }
