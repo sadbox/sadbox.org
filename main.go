@@ -54,12 +54,15 @@ func keyboardHandler(w http.ResponseWriter, r *http.Request) {
 
 func serveStatic(filename string) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+        w.Header().Set("Cache-Control", "max-age=31536000")
 		http.ServeFile(w, r, filename)
 	}
 }
 
 func Log(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        w.Header().Set("Cache-Control", "max-age=120")
+
 		ForwardedFor := r.Header.Get("X-Forwarded-For")
 		if ForwardedFor == "" {
 			log.Printf("%s %s %s", r.RemoteAddr, r.Method, r.URL)
@@ -95,6 +98,9 @@ func main() {
 	http.HandleFunc("/sitemap.xml", serveStatic("./static/sitemap.xml"))
 	http.HandleFunc("/robots.txt", serveStatic("./static/robots.txt"))
 	http.HandleFunc("/humans.txt", serveStatic("./static/humans.txt"))
+	http.HandleFunc("/jquery.min.js", serveStatic("./vendor/jquery.min.js"))
+	http.HandleFunc("/highcharts.js", serveStatic("./vendor/highcharts.js"))
+	http.HandleFunc("/bootstrap.min.css", serveStatic("./vendor/bootstrap.min.css"))
 	http.HandleFunc("/mu-fea81392-5746180a-5e50de1d-fb4a7b05.txt", serveStatic("./static/blitz.txt"))
 
 	// The plain-jane stuff I serve up
