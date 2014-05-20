@@ -11,7 +11,8 @@ import (
 	"runtime"
 	"strings"
 
-    "github.com/daaku/go.httpgzip"
+	"github.com/daaku/go.httpgzip"
+	"github.com/sadbox/openssl"
 )
 
 var templates = template.Must(template.New("").Funcs(template.FuncMap{"add": func(a, b int) int { return a + b }}).ParseGlob("./views/*.tmpl"))
@@ -54,14 +55,14 @@ func keyboardHandler(w http.ResponseWriter, r *http.Request) {
 
 func serveStatic(filename string) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-        w.Header().Set("Cache-Control", "max-age=31536000")
+		w.Header().Set("Cache-Control", "max-age=31536000")
 		http.ServeFile(w, r, filename)
 	}
 }
 
 func Log(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        w.Header().Set("Cache-Control", "max-age=120")
+		w.Header().Set("Cache-Control", "max-age=120")
 
 		ForwardedFor := r.Header.Get("X-Forwarded-For")
 		if ForwardedFor == "" {
@@ -129,6 +130,6 @@ func main() {
 
 	go func() { log.Fatal(http.ListenAndServe(":http", Log(http.DefaultServeMux))) }()
 
-	log.Fatal(http.ListenAndServeTLS(":https", config.CertFile,
+	log.Fatal(openssl.ListenAndServeTLS(":https", config.CertFile,
 		config.KeyFile, httpgzip.NewHandler(Log(http.DefaultServeMux))))
 }
