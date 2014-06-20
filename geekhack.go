@@ -23,7 +23,7 @@ const (
 		` date, count(RID)/(SELECT DATEDIFF(NOW(), (SELECT MIN(Time)` +
 		` from messages where channel = '#geekhack'))) as count from` +
 		` messages where channel ='#geekhack' group by date order by date) as subquery;`
-	topTenWords = `select Nick, ` + "`" + `%[1]s` + "`" + ` from Words order by ` + "`" + `%[1]s` + "`" + ` desc limit 10;`
+	topTenWords = `select Nick, ` + "`" + `%[1]s` + "`" + ` from words order by ` + "`" + `%[1]s` + "`" + ` desc limit 10;`
 )
 
 type Geekhack struct {
@@ -178,7 +178,7 @@ func (g *Geekhack) runQuery(query string) ([]Tuple, error) {
 
 func (g *Geekhack) UpdateCurseWords() (map[string][]Tuple, error) {
 	CurseWords := make(map[string][]Tuple)
-	query, err := g.db.Query(`SELECT * FROM Words LIMIT 1`)
+	query, err := g.db.Query(`SELECT * FROM words LIMIT 1`)
 	if err != nil {
 		return nil, err
 	}
