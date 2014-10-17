@@ -2,7 +2,7 @@ package httpgzip_test
 
 import (
 	"bytes"
-	"github.com/daaku/go.httpgzip"
+	"github.com/sadbox/sadbox.org/Godeps/_workspace/src/github.com/daaku/go.httpgzip"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"

@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/sadbox/sadbox.org/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
 	"log"
 	"net/http"
 	"sync"

@@ -13,7 +13,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/daaku/go.httpgzip"
+	"github.com/sadbox/sadbox.org/Godeps/_workspace/src/github.com/daaku/go.httpgzip"
 )
 
 var templates = template.Must(template.New("").Funcs(template.FuncMap{"add": func(a, b int) int { return a + b }}).ParseGlob("./views/*.tmpl"))
