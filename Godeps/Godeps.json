@@ -1,0 +1,15 @@
+{
+	"ImportPath": "github.com/sadbox/sadbox.org",
+	"GoVersion": "go1.3.1",
+	"Deps": [
+		{
+			"ImportPath": "github.com/daaku/go.httpgzip",
+			"Rev": "fd996995061ca6ad56e2b1b14e530edf06ce25ab"
+		},
+		{
+			"ImportPath": "github.com/go-sql-driver/mysql",
+			"Comment": "v1.0.1",
+			"Rev": "75bb76ec381d160c6b119bd8004a12979b0f2008"
+		}
+	]
+}
