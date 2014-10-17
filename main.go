@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"path"
@@ -59,16 +60,57 @@ func serveStatic(filename string) func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func Log(handler http.Handler) http.Handler {
+func CatchPanic(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("Recovered from panic: %v", r)
+				http.Error(w, "Something went wrong!", http.StatusInternalServerError)
+			}
+		}()
+
+		handler.ServeHTTP(w, r)
+	})
+}
+
+func RedirectToHTTPS(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		host, _, err := net.SplitHostPort(r.RemoteAddr)
+		if err != nil {
+			http.Redirect(w, r, "https://sadbox.org"+r.RequestURI, http.StatusMovedPermanently)
+			return
+		}
+
+		ip := net.ParseIP(host)
+		if ip == nil {
+			http.Redirect(w, r, "https://sadbox.org"+r.RequestURI, http.StatusMovedPermanently)
+			return
+		}
+
+		if !ip.IsLoopback() {
+			http.Redirect(w, r, "https://sadbox.org"+r.RequestURI, http.StatusMovedPermanently)
+			return
+		}
+
+		handler.ServeHTTP(w, r)
+	})
+}
+
+func AddHeaders(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "max-age=120")
+		w.Header().Set("Strict-Transport-Security", "max-age=31536000")
+		handler.ServeHTTP(w, r)
+	})
+}
 
-		ForwardedFor := r.Header.Get("X-Forwarded-For")
-		if ForwardedFor == "" {
-			log.Printf("%s %s %s", r.RemoteAddr, r.Method, r.URL)
-		} else {
-			log.Printf("%s %s %s", ForwardedFor, r.Method, r.URL)
+func Log(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		remoteHost := r.Header.Get("X-Forwarded-For")
+		if remoteHost == "" {
+			remoteHost = r.RemoteAddr
 		}
+		log.Printf("%s %s %s", remoteHost, r.Method, r.URL)
 		handler.ServeHTTP(w, r)
 	})
 }
@@ -127,8 +169,15 @@ func main() {
 
 	http.Handle("/znc", http.RedirectHandler("https://sadbox.org:6697", http.StatusMovedPermanently))
 
-	go func() { log.Fatal(http.ListenAndServe(":http", Log(http.DefaultServeMux))) }()
+	servemux := httpgzip.NewHandler(
+		CatchPanic(
+			Log(
+				AddHeaders(http.DefaultServeMux))))
+
+	go func() {
+		log.Fatal(http.ListenAndServe(":http", RedirectToHTTPS(servemux)))
+	}()
 
 	log.Fatal(http.ListenAndServeTLS(":https", config.CertFile,
-		config.KeyFile, httpgzip.NewHandler(Log(http.DefaultServeMux))))
+		config.KeyFile, servemux))
 }
