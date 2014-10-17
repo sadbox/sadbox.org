@@ -21,6 +21,9 @@ _testmain.go
 
 *.exe
 
+# bollocks to OSX
+.DS_Store
+
 # Non-github-default-stuff
 /static/images/*
 /static/keyboards/*
