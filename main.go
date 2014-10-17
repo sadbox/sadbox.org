@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"html/template"
 	"io/ioutil"
@@ -178,6 +179,8 @@ func main() {
 		log.Fatal(http.ListenAndServe(":http", RedirectToHTTPS(servemux)))
 	}()
 
-	log.Fatal(http.ListenAndServeTLS(":https", config.CertFile,
-		config.KeyFile, servemux))
+	// Disable SSLv3
+	tlsconfig := &tls.Config{MinVersion: tls.VersionTLS10}
+	server := &http.Server{Addr: ":https", Handler: servemux, TLSConfig: tlsconfig}
+	log.Fatal(server.ListenAndServeTLS(config.CertFile, config.KeyFile))
 }
