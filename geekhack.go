@@ -4,11 +4,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	_ "github.com/sadbox/sadbox.org/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
 	"log"
 	"net/http"
 	"sync"
 	"time"
+
+	_ "github.com/sadbox/sadbox.org/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
 )
 
 const (
