@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/daaku/go.httpgzip"
+	"golang.org/x/crypto/acme/autocert"
 )
 
 var templates = template.Must(template.New("").Funcs(template.FuncMap{"add": func(a, b int) int { return a + b }}).ParseGlob("./views/*.tmpl"))
@@ -179,8 +180,18 @@ func main() {
 		log.Fatal(http.ListenAndServe(":http", RedirectToHTTPS(servemux)))
 	}()
 
-	// Disable SSLv3
-	tlsconfig := &tls.Config{MinVersion: tls.VersionTLS10}
+	m := autocert.Manager{
+		Prompt:     autocert.AcceptTOS,
+		Cache:      autocert.DirCache("/home/sadbox-web/cert-cache"),
+		HostPolicy: autocert.HostWhitelist("www.sadbox.org", "sadbox.org", "www.sadbox.es", "sadbox.es"),
+	}
+
+	tlsconfig := &tls.Config{
+		MinVersion:               tls.VersionTLS10, // Disable SSLv3
+		PreferServerCipherSuites: true,
+		GetCertificate:           m.GetCertificate,
+	}
+
 	server := &http.Server{Addr: ":https", Handler: servemux, TLSConfig: tlsconfig}
 	log.Fatal(server.ListenAndServeTLS(config.CertFile, config.KeyFile))
 }
