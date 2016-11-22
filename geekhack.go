@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -28,8 +29,7 @@ const (
 )
 
 type Geekhack struct {
-	db     *sql.DB
-	config Config
+	db *sql.DB
 
 	mutex                 sync.RWMutex // Protects:
 	PostsByDay            []Tuple
@@ -47,8 +47,8 @@ type Tuple struct {
 	Count int
 }
 
-func NewGeekhack(config Config) (*Geekhack, error) {
-	db, err := sql.Open("mysql", config.DBConn)
+func NewGeekhack() (*Geekhack, error) {
+	db, err := sql.Open("mysql", os.Getenv("GEEKHACK_DB"))
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +61,6 @@ func NewGeekhack(config Config) (*Geekhack, error) {
 	geekhack := &Geekhack{
 		CurseWords: make(map[string][]Tuple),
 		db:         db,
-		config:     config,
 	}
 
 	go geekhack.Update()

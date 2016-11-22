@@ -2,15 +2,14 @@ package main
 
 import (
 	"crypto/tls"
-	"encoding/json"
 	"html/template"
 	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
-	"os"
+	"net/http/httputil"
+	"net/url"
 	"path"
-	"runtime"
 	"strings"
 
 	"github.com/daaku/go.httpgzip"
@@ -18,12 +17,6 @@ import (
 )
 
 var templates = template.Must(template.New("").Funcs(template.FuncMap{"add": func(a, b int) int { return a + b }}).ParseGlob("./views/*.tmpl"))
-
-type Config struct {
-	DBConn   string
-	CertFile string
-	KeyFile  string
-}
 
 func getFiles(folder, fileType string) []string {
 	files, err := ioutil.ReadDir(folder)
@@ -118,20 +111,9 @@ func Log(handler http.Handler) http.Handler {
 }
 
 func main() {
-	runtime.GOMAXPROCS(runtime.NumCPU())
-	configfile, err := os.Open("config.json")
-	if err != nil {
-		log.Fatal(err)
-	}
-	var config Config
-	err = json.NewDecoder(configfile).Decode(&config)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	log.Println("Starting sadbox.org")
 
-	geekhack, err := NewGeekhack(config)
+	geekhack, err := NewGeekhack()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -169,7 +151,12 @@ func main() {
 	// The rest of the static files
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 
-	http.Handle("/znc", http.RedirectHandler("https://sadbox.org:6697", http.StatusMovedPermanently))
+	localhost_znc, err := url.Parse("http://127.0.0.1:6698")
+	if err != nil {
+		log.Fatal(err)
+	}
+	http.Handle("/znc/", httputil.NewSingleHostReverseProxy(localhost_znc))
+	http.Handle("/znc", http.RedirectHandler("/znc/", http.StatusMovedPermanently))
 
 	servemux := httpgzip.NewHandler(
 		CatchPanic(
@@ -193,5 +180,5 @@ func main() {
 	}
 
 	server := &http.Server{Addr: ":https", Handler: servemux, TLSConfig: tlsconfig}
-	log.Fatal(server.ListenAndServeTLS(config.CertFile, config.KeyFile))
+	log.Fatal(server.ListenAndServeTLS("", ""))
 }
