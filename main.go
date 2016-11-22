@@ -68,22 +68,26 @@ func CatchPanic(handler http.Handler) http.Handler {
 	})
 }
 
+func SendToHTTPS(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "https://"+r.Host+r.RequestURI, http.StatusMovedPermanently)
+}
+
 func RedirectToHTTPS(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		host, _, err := net.SplitHostPort(r.RemoteAddr)
 		if err != nil {
-			http.Redirect(w, r, "https://sadbox.org"+r.RequestURI, http.StatusMovedPermanently)
+			SendToHTTPS(w, r)
 			return
 		}
 
 		ip := net.ParseIP(host)
 		if ip == nil {
-			http.Redirect(w, r, "https://sadbox.org"+r.RequestURI, http.StatusMovedPermanently)
+			SendToHTTPS(w, r)
 			return
 		}
 
 		if !ip.IsLoopback() {
-			http.Redirect(w, r, "https://sadbox.org"+r.RequestURI, http.StatusMovedPermanently)
+			SendToHTTPS(w, r)
 			return
 		}
 
@@ -168,9 +172,12 @@ func main() {
 	}()
 
 	m := autocert.Manager{
-		Prompt:     autocert.AcceptTOS,
-		Cache:      autocert.DirCache("/home/sadbox-web/cert-cache"),
-		HostPolicy: autocert.HostWhitelist("www.sadbox.org", "sadbox.org", "www.sadbox.es", "sadbox.es"),
+		Prompt: autocert.AcceptTOS,
+		Cache:  autocert.DirCache("/home/sadbox-web/cert-cache"),
+		HostPolicy: autocert.HostWhitelist(
+			"www.sadbox.org", "sadbox.org",
+			"www.sadbox.es", "sadbox.es",
+			"www.geekwhack.org", "geekwhack.org"),
 	}
 
 	tlsconfig := &tls.Config{
