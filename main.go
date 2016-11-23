@@ -44,7 +44,7 @@ func keyboardHandler(w http.ResponseWriter, r *http.Request) {
 		matchedBoards.Keyboards[path.Join("/", dir, file)] = path.Join("/", dir, "thumbs", file)
 	}
 	ctx := NewContext(r)
-	ctx.keyboards = matchedBoards
+	ctx.Keyboards = matchedBoards
 	if err := templates.ExecuteTemplate(w, "keyboards.tmpl", ctx); err != nil {
 		log.Println(err)
 	}
@@ -55,14 +55,14 @@ type WebsiteName struct {
 }
 
 type TemplateContext struct {
-	geekhack  *Geekhack
-	webname   *WebsiteName
-	keyboards *Keyboards
+	Geekhack  *Geekhack
+	Webname   *WebsiteName
+	Keyboards *Keyboards
 }
 
 func NewContext(r *http.Request) *TemplateContext {
 	return &TemplateContext{
-		webname: &WebsiteName{
+		Webname: &WebsiteName{
 			strings.Replace(r.Host, ".", " &middot; ", -1),
 			r.Host,
 		},
@@ -162,6 +162,8 @@ func main() {
 		}
 
 		ctx := NewContext(r)
+		log.Printf("%+v\n", ctx)
+		log.Println(ctx.Webname.Title)
 		if err := templates.ExecuteTemplate(w, "main.tmpl", ctx); err != nil {
 			log.Println(err)
 		}
