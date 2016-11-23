@@ -63,7 +63,7 @@ type TemplateContext struct {
 func NewContext(r *http.Request) *TemplateContext {
 	return &TemplateContext{
 		Webname: &WebsiteName{
-			strings.Replace(r.Host, ".", " &middot; ", -1),
+			strings.Replace(r.Host, ".", " \u00B7 ", -1),
 			r.Host,
 		},
 	}
