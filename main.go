@@ -38,13 +38,34 @@ type Keyboards struct {
 
 func keyboardHandler(w http.ResponseWriter, r *http.Request) {
 	keyboards := getFiles("./static/keyboards/", ".jpg")
-	matchedBoards := Keyboards{make(map[string]string)}
+	matchedBoards := &Keyboards{make(map[string]string)}
 	for _, keyboard := range keyboards {
 		dir, file := path.Split(keyboard)
 		matchedBoards.Keyboards[path.Join("/", dir, file)] = path.Join("/", dir, "thumbs", file)
 	}
-	if err := templates.ExecuteTemplate(w, "keyboards.tmpl", matchedBoards); err != nil {
+	ctx := NewContext(r)
+	ctx.keyboards = matchedBoards
+	if err := templates.ExecuteTemplate(w, "keyboards.tmpl", ctx); err != nil {
 		log.Println(err)
+	}
+}
+
+type WebsiteName struct {
+	Title, Brand string
+}
+
+type TemplateContext struct {
+	geekhack  *Geekhack
+	webname   *WebsiteName
+	keyboards *Keyboards
+}
+
+func NewContext(r *http.Request) *TemplateContext {
+	return &TemplateContext{
+		webname: &WebsiteName{
+			strings.Replace(r.Host, ".", " &middot; ", -1),
+			r.Host,
+		},
 	}
 }
 
@@ -140,7 +161,8 @@ func main() {
 			return
 		}
 
-		if err := templates.ExecuteTemplate(w, "main.tmpl", nil); err != nil {
+		ctx := NewContext(r)
+		if err := templates.ExecuteTemplate(w, "main.tmpl", ctx); err != nil {
 			log.Println(err)
 		}
 	})

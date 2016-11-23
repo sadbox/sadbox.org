@@ -11,7 +11,7 @@
             <div class="panel panel-default">
                 <div class="panel-heading">Total Posts</div>
                 <table class="table table-condensed table-hover table-bordered">
-                    {{range $index, $tuple := .TotalPosts}}
+                    {{range $index, $tuple := .geekhack.TotalPosts}}
                         <tr>
                         <td>{{add $index 1}}</td>
                         <td>{{$tuple.Name}}</td>
@@ -25,7 +25,7 @@
             <div class="panel panel-default">
                 <div class="panel-heading">Most Active Days</div>
                 <table class="table table-condensed table-hover table-bordered">
-                    {{range $index, $tuple := .PostsByDay}}
+                    {{range $index, $tuple := .geekhack.PostsByDay}}
                         <tr>
                         <td>{{add $index 1}}</td>
                         <td>{{$tuple.Name}}</td>
@@ -38,7 +38,7 @@
     </div>
     <h2>Words!</h2>
     <div class="row">
-        {{range $word, $tuple := .CurseWords}}
+        {{range $word, $tuple := .geekhack.CurseWords}}
             <div class="col-md-3">
                 <div class="panel panel-default">
                     <div class="panel-heading">{{$word}}</div>
@@ -56,6 +56,7 @@
         {{end}}
     </div>
 </div>
+<script src="/static/jquery.min.js"></script>
 <script src="/static/highcharts.js"></script>
 <script src="/static/gencharts.js"></script>
 {{template "footer"}}
