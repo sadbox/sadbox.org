@@ -18,6 +18,12 @@ import (
 
 var templates = template.Must(template.New("").Funcs(template.FuncMap{"add": func(a, b int) int { return a + b }}).ParseGlob("./views/*.tmpl"))
 
+var hostname_whitelist = []string{
+	"www.sadbox.org", "sadbox.org",
+	"www.sadbox.es", "sadbox.es",
+	"www.geekwhack.org", "geekwhack.org",
+}
+
 func getFiles(folder, fileType string) []string {
 	files, err := ioutil.ReadDir(folder)
 	if err != nil {
@@ -61,10 +67,19 @@ type TemplateContext struct {
 }
 
 func NewContext(r *http.Request) *TemplateContext {
+	title := "sadbox \u00B7 org"
+	host := "sadbox.org"
+	for _, v := range hostname_whitelist {
+		if v == r.Host {
+			title = strings.Replace(r.Host, ".", " \u00B7 ", -1)
+			host = r.Host
+			break
+		}
+	}
 	return &TemplateContext{
 		Webname: &WebsiteName{
-			strings.Replace(r.Host, ".", " \u00B7 ", -1),
-			r.Host,
+			title,
+			host,
 		},
 	}
 }
@@ -196,12 +211,9 @@ func main() {
 	}()
 
 	m := autocert.Manager{
-		Prompt: autocert.AcceptTOS,
-		Cache:  autocert.DirCache("/home/sadbox-web/cert-cache"),
-		HostPolicy: autocert.HostWhitelist(
-			"www.sadbox.org", "sadbox.org",
-			"www.sadbox.es", "sadbox.es",
-			"www.geekwhack.org", "geekwhack.org"),
+		Prompt:     autocert.AcceptTOS,
+		Cache:      autocert.DirCache("/home/sadbox-web/cert-cache"),
+		HostPolicy: autocert.HostWhitelist(hostname_whitelist...),
 	}
 
 	tlsconfig := &tls.Config{
