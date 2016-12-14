@@ -25,14 +25,9 @@ _testmain.go
 .DS_Store
 
 # Non-github-default-stuff
-/static/images/*
-/static/keyboards/*
-/static/ghstats/*
-/static/resume/
-/static/graphs/
-/static/stuff/
 /sadbox.org
-/gentables/gentables
 /config.xml
 /config.json
 /deploy.sh
+/bindata.go
+/cert-cache/

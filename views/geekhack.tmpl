@@ -1,4 +1,5 @@
-{{template "header" .}}
+{{define "geekhack" -}}
+{{template "header" . -}}
 <div class="container">
     <h1>#geekhack statistics <small>since 2012-12-17 @ 04:04:00 UTC</small></h1>
     <h2>Posts</h2>
@@ -60,3 +61,4 @@
 <script src="/static/highcharts.js"></script>
 <script src="/static/gencharts.js"></script>
 {{template "footer"}}
+{{end}}

@@ -1,9 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"crypto/tls"
 	"html/template"
-	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -16,7 +16,8 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 )
 
-var templates = template.Must(template.New("").Funcs(template.FuncMap{"add": func(a, b int) int { return a + b }}).ParseGlob("./views/*.tmpl"))
+//go:generate go-bindata ./static ./vendor ./views
+var templates = template.New("").Funcs(template.FuncMap{"add": func(a, b int) int { return a + b }})
 
 var hostname_whitelist = []string{
 	"www.sadbox.org", "sadbox.org",
@@ -24,46 +25,13 @@ var hostname_whitelist = []string{
 	"www.geekwhack.org", "geekwhack.org",
 }
 
-func getFiles(folder, fileType string) []string {
-	files, err := ioutil.ReadDir(folder)
-	if err != nil {
-		panic(err)
-	}
-	var templateList []string
-	for _, file := range files {
-		if strings.HasSuffix(file.Name(), fileType) {
-			templateList = append(templateList, folder+file.Name())
-		}
-	}
-	return templateList
-}
-
-type Keyboards struct {
-	Keyboards map[string]string
-}
-
-func keyboardHandler(w http.ResponseWriter, r *http.Request) {
-	keyboards := getFiles("./static/keyboards/", ".jpg")
-	matchedBoards := &Keyboards{make(map[string]string)}
-	for _, keyboard := range keyboards {
-		dir, file := path.Split(keyboard)
-		matchedBoards.Keyboards[path.Join("/", dir, file)] = path.Join("/", dir, "thumbs", file)
-	}
-	ctx := NewContext(r)
-	ctx.Keyboards = matchedBoards
-	if err := templates.ExecuteTemplate(w, "keyboards.tmpl", ctx); err != nil {
-		log.Println(err)
-	}
-}
-
 type WebsiteName struct {
 	Title, Brand string
 }
 
 type TemplateContext struct {
-	Geekhack  *Geekhack
-	Webname   *WebsiteName
-	Keyboards *Keyboards
+	Geekhack *Geekhack
+	Webname  *WebsiteName
 }
 
 func NewContext(r *http.Request) *TemplateContext {
@@ -87,7 +55,15 @@ func NewContext(r *http.Request) *TemplateContext {
 func serveStatic(filename string) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "max-age=31536000")
-		http.ServeFile(w, r, filename)
+		asset, err := Asset(filename)
+		if err != nil {
+			http.NotFound(w, r)
+		}
+		assetInfo, err := AssetInfo(filename)
+		if err != nil {
+			http.NotFound(w, r)
+		}
+		http.ServeContent(w, r, filename, assetInfo.ModTime(), bytes.NewReader(asset))
 	}
 }
 
@@ -153,6 +129,14 @@ func Log(handler http.Handler) http.Handler {
 func main() {
 	log.Println("Starting sadbox.org")
 
+	views, err := AssetDir("views")
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, filename := range views {
+		template.Must(templates.Parse(string(MustAsset(path.Join("views", filename)))))
+	}
+
 	geekhack, err := NewGeekhack()
 	if err != nil {
 		log.Fatal(err)
@@ -160,14 +144,15 @@ func main() {
 	defer geekhack.db.Close()
 
 	// These files have to be here
-	http.HandleFunc("/favicon.ico", serveStatic("./static/favicon.ico"))
-	http.HandleFunc("/sitemap.xml", serveStatic("./static/sitemap.xml"))
-	http.HandleFunc("/robots.txt", serveStatic("./static/robots.txt"))
-	http.HandleFunc("/humans.txt", serveStatic("./static/humans.txt"))
-	http.HandleFunc("/static/jquery.min.js", serveStatic("./vendor/jquery.min.js"))
-	http.HandleFunc("/static/highcharts.js", serveStatic("./vendor/highcharts.js"))
-	http.HandleFunc("/static/bootstrap.min.css", serveStatic("./vendor/bootstrap.min.css"))
-	http.HandleFunc("/mu-fea81392-5746180a-5e50de1d-fb4a7b05.txt", serveStatic("./static/blitz.txt"))
+	http.HandleFunc("/favicon.ico", serveStatic("static/favicon.ico"))
+	http.HandleFunc("/sitemap.xml", serveStatic("static/sitemap.xml"))
+	http.HandleFunc("/robots.txt", serveStatic("static/robots.txt"))
+	http.HandleFunc("/humans.txt", serveStatic("static/humans.txt"))
+	http.HandleFunc("/static/jquery.min.js", serveStatic("vendor/jquery.min.js"))
+	http.HandleFunc("/static/highcharts.js", serveStatic("vendor/highcharts.js"))
+	http.HandleFunc("/static/bootstrap.min.css", serveStatic("vendor/bootstrap.min.css"))
+	http.HandleFunc("/static/gencharts.js", serveStatic("static/gencharts.js"))
+	http.HandleFunc("/static/loading.gif", serveStatic("static/loading.gif"))
 
 	// The plain-jane stuff I serve up
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -177,22 +162,16 @@ func main() {
 		}
 
 		ctx := NewContext(r)
-		log.Printf("%+v\n", ctx)
-		log.Println(ctx.Webname.Title)
-		if err := templates.ExecuteTemplate(w, "main.tmpl", ctx); err != nil {
+		if err := templates.ExecuteTemplate(w, "main", ctx); err != nil {
 			log.Println(err)
 		}
 	})
-	http.HandleFunc("/keyboards", keyboardHandler)
 
 	// Geekhack stats! the geekhack struct will handle the routing to sub-things
 	http.Handle("/geekhack/", geekhack)
 	// Redirects to the right URL so I don't break old links
 	http.Handle("/ghstats", http.RedirectHandler("/geekhack/", http.StatusMovedPermanently))
 	http.Handle("/geekhack", http.RedirectHandler("/geekhack/", http.StatusMovedPermanently))
-
-	// The rest of the static files
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 
 	localhost_znc, err := url.Parse("http://127.0.0.1:6698")
 	if err != nil {
