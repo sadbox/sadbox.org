@@ -10,13 +10,14 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/daaku/go.httpgzip"
 	"golang.org/x/crypto/acme/autocert"
 )
 
-//go:generate go-bindata ./static ./vendor ./views
+//go:generate go-bindata ./static/... ./views
 var templates = template.New("").Funcs(template.FuncMap{"add": func(a, b int) int { return a + b }})
 
 var hostname_whitelist = []string{
@@ -52,8 +53,14 @@ func NewContext(r *http.Request) *TemplateContext {
 	}
 }
 
-func serveStatic(filename string) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
+func serveStatic(filename string) {
+	relPath, err := filepath.Rel("static", filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println("Serving Static File:", relPath)
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "max-age=31536000")
 		asset, err := Asset(filename)
 		if err != nil {
@@ -65,6 +72,8 @@ func serveStatic(filename string) func(http.ResponseWriter, *http.Request) {
 		}
 		http.ServeContent(w, r, filename, assetInfo.ModTime(), bytes.NewReader(asset))
 	}
+
+	http.HandleFunc(path.Join("/", relPath), handler)
 }
 
 func CatchPanic(handler http.Handler) http.Handler {
@@ -126,15 +135,29 @@ func Log(handler http.Handler) http.Handler {
 	})
 }
 
+func getFiles(dir string) []string {
+	files, err := AssetDir(dir)
+	if err != nil {
+		return []string{dir}
+	}
+
+	var outFiles []string
+	for _, filename := range files {
+		outFiles = append(outFiles, getFiles(path.Join(dir, filename))...)
+	}
+	return outFiles
+}
+
 func main() {
 	log.Println("Starting sadbox.org")
 
-	views, err := AssetDir("views")
-	if err != nil {
-		log.Fatal(err)
+	for _, filename := range getFiles("views") {
+		template.Must(templates.Parse(string(MustAsset(filename))))
 	}
-	for _, filename := range views {
-		template.Must(templates.Parse(string(MustAsset(path.Join("views", filename)))))
+
+	// static files
+	for _, filename := range getFiles("static") {
+		serveStatic(filename)
 	}
 
 	geekhack, err := NewGeekhack()
@@ -143,18 +166,6 @@ func main() {
 	}
 	defer geekhack.db.Close()
 
-	// These files have to be here
-	http.HandleFunc("/favicon.ico", serveStatic("static/favicon.ico"))
-	http.HandleFunc("/sitemap.xml", serveStatic("static/sitemap.xml"))
-	http.HandleFunc("/robots.txt", serveStatic("static/robots.txt"))
-	http.HandleFunc("/humans.txt", serveStatic("static/humans.txt"))
-	http.HandleFunc("/static/jquery.min.js", serveStatic("vendor/jquery.min.js"))
-	http.HandleFunc("/static/highcharts.js", serveStatic("vendor/highcharts.js"))
-	http.HandleFunc("/static/bootstrap.min.css", serveStatic("vendor/bootstrap.min.css"))
-	http.HandleFunc("/static/gencharts.js", serveStatic("static/gencharts.js"))
-	http.HandleFunc("/static/loading.gif", serveStatic("static/loading.gif"))
-
-	// The plain-jane stuff I serve up
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)
