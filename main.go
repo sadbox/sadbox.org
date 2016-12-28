@@ -193,10 +193,11 @@ func main() {
 		Prompt:     autocert.AcceptTOS,
 		Cache:      autocert.DirCache("/home/sadbox-web/cert-cache"),
 		HostPolicy: autocert.HostWhitelist(hostname_whitelist...),
+		Email:      "blue6249@gmail.com",
+		ForceRSA:   true,
 	}
 
 	tlsconfig := &tls.Config{
-		MinVersion:               tls.VersionTLS10, // Disable SSLv3
 		PreferServerCipherSuites: true,
 		GetCertificate:           m.GetCertificate,
 	}
