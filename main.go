@@ -243,9 +243,18 @@ func main() {
 		ForceRSA:   true,
 	}
 
+	var certs []tls.Certificate
+	sadboxCert, err := tls.LoadX509KeyPair("/home/sadbox-web/cert-cache/sadbox.org",
+		"/home/sadbox-web/cert-cache/sadbox.org")
+
+	if err == nil {
+		certs = append(certs, sadboxCert)
+	}
+
 	tlsconfig := &tls.Config{
 		PreferServerCipherSuites: true,
 		GetCertificate:           m.GetCertificate,
+		Certificates:             certs,
 	}
 
 	go NewSessionKeys(tlsconfig).Spin()
