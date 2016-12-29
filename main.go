@@ -92,6 +92,7 @@ func CatchPanic(handler http.Handler) http.Handler {
 }
 
 func SendToHTTPS(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Connection", "close")
 	http.Redirect(w, r, "https://"+r.Host+r.RequestURI, http.StatusMovedPermanently)
 }
 
@@ -231,9 +232,12 @@ func main() {
 			Log(
 				AddHeaders(http.DefaultServeMux))))
 
-	go func() {
-		log.Fatal(http.ListenAndServe(":http", RedirectToHTTPS(servemux)))
-	}()
+	httpSrv := &http.Server{
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
+		Handler:      RedirectToHTTPS(servemux),
+	}
+	go func() { log.Fatal(httpSrv.ListenAndServe()) }()
 
 	m := autocert.Manager{
 		Prompt:     autocert.AcceptTOS,
@@ -259,6 +263,12 @@ func main() {
 
 	go NewSessionKeys(tlsconfig).Spin()
 
-	server := &http.Server{Addr: ":https", Handler: servemux, TLSConfig: tlsconfig}
+	server := &http.Server{
+		Addr:         ":https",
+		Handler:      servemux,
+		TLSConfig:    tlsconfig,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
+	}
 	log.Fatal(server.ListenAndServeTLS("", ""))
 }
