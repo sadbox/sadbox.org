@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/rand"
 	"crypto/tls"
 	"html/template"
 	"log"
@@ -12,6 +13,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/daaku/go.httpgzip"
 	"golang.org/x/crypto/acme/autocert"
@@ -148,6 +150,39 @@ func getFiles(dir string) []string {
 	return outFiles
 }
 
+type sessionKeys struct {
+	keys [][32]byte
+	buf  []byte
+	tls  *tls.Config
+}
+
+func NewSessionKeys(tls *tls.Config) *sessionKeys {
+	sk := &sessionKeys{
+		buf: make([]byte, 32),
+		tls: tls,
+	}
+	sk.addNewKey()
+	return sk
+}
+
+func (sk *sessionKeys) addNewKey() {
+	rand.Read(sk.buf)
+	newKey := [32]byte{}
+	copy(newKey[:], sk.buf)
+	sk.keys = append([][32]byte{newKey}, sk.keys...)
+	if len(sk.keys) > 4 {
+		sk.keys = sk.keys[:5]
+	}
+	log.Println("Rotating Session Keys")
+	sk.tls.SetSessionTicketKeys(sk.keys)
+}
+
+func (sk *sessionKeys) Spin() {
+	for range time.Tick(24 * time.Hour) {
+		sk.addNewKey()
+	}
+}
+
 func main() {
 	log.Println("Starting sadbox.org")
 
@@ -212,6 +247,8 @@ func main() {
 		PreferServerCipherSuites: true,
 		GetCertificate:           m.GetCertificate,
 	}
+
+	go NewSessionKeys(tlsconfig).Spin()
 
 	server := &http.Server{Addr: ":https", Handler: servemux, TLSConfig: tlsconfig}
 	log.Fatal(server.ListenAndServeTLS("", ""))
