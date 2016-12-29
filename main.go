@@ -121,7 +121,7 @@ func RedirectToHTTPS(handler http.Handler) http.Handler {
 func AddHeaders(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "max-age=120")
-		w.Header().Set("Strict-Transport-Security", "max-age=31536000")
+		w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
 		handler.ServeHTTP(w, r)
 	})
 }
