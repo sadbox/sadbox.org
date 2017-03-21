@@ -1,0 +1,14 @@
+#postsByMinute #postsByDayAll {
+    min-width: 310px;
+    height: 400px;
+    margin: 0 auto;
+    display:none;
+}
+
+#spinner #spinnerTwo {
+    min-width: 310px;
+    height: 60px;
+    margin: 0 auto;
+    text-align: center;
+    display:none
+}

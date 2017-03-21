@@ -1,12 +1,13 @@
 {{define "geekhack" -}}
 {{template "header" . -}}
+
 <div class="container">
     <h1>#geekhack statistics <small>since 2012-12-17 @ 04:04:00 UTC</small></h1>
     <h2>Posts</h2>
-    <div id="postsByMinute" style="min-width: 310px; height: 400px; margin: 0 auto; display:none"></div>
-    <div id="spinner" style="min-width: 310px; height: 60px; margin: 0 auto; text-align: center; display:none"><img src="/static/loading.gif"/></div>
-    <div id="postsByDayAll" style="min-width: 310px; height: 400px; margin: 0 auto; display:none"></div>
-    <div id="spinnerTwo" style="min-width: 310px; height: 60px; margin: 0 auto; text-align: center; display:none"><img src="/static/loading.gif"/></div>
+    <div id="postsByMinute"></div>
+    <div id="spinner"><img src="/static/loading.gif"/></div>
+    <div id="postsByDayAll"></div>
+    <div id="spinnerTwo"><img src="/static/loading.gif"/></div>
     <div class="row">
         <div class="col-md-6">
             <div class="panel panel-default">
@@ -60,5 +61,7 @@
 <script src="/vendor/jquery.min.js"></script>
 <script src="/vendor/highcharts.min.js"></script>
 <script src="/static/gencharts.js"></script>
+<link href="/static/geekhack.css" rel="stylesheet">
+<link href="/vendor/highcharts.css" rel="stylesheet">
 {{template "footer"}}
 {{end}}
