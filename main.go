@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"crypto/rand"
 	"crypto/tls"
 	"html/template"
@@ -11,15 +10,15 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"path"
-	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/daaku/go.httpgzip"
+	assetfs "github.com/elazarl/go-bindata-assetfs"
 	"golang.org/x/crypto/acme/autocert"
 )
 
-//go:generate go-bindata ./static/... ./views
+//go:generate go-bindata ./views ./static/...
 var templates = template.New("").Funcs(template.FuncMap{"add": func(a, b int) int { return a + b }})
 
 var hostname_whitelist = []string{
@@ -53,29 +52,6 @@ func NewContext(r *http.Request) *TemplateContext {
 			host,
 		},
 	}
-}
-
-func serveStatic(filename string) {
-	relPath, err := filepath.Rel("static", filename)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Println("Serving Static File:", relPath)
-
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Cache-Control", "max-age=31536000")
-		asset, err := Asset(filename)
-		if err != nil {
-			http.NotFound(w, r)
-		}
-		assetInfo, err := AssetInfo(filename)
-		if err != nil {
-			http.NotFound(w, r)
-		}
-		http.ServeContent(w, r, filename, assetInfo.ModTime(), bytes.NewReader(asset))
-	}
-
-	http.HandleFunc(path.Join("/", relPath), handler)
 }
 
 func CatchPanic(handler http.Handler) http.Handler {
@@ -126,7 +102,7 @@ func AddHeaders(handler http.Handler) http.Handler {
 		w.Header().Set("Content-Security-Policy", "default-src 'self'; object-src 'none'; frame-ancestors 'none'")
 		w.Header().Set("X-Frame-Options", "DENY")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
-		w.Header().Set("Referrer-Policy", "same-origin")
+		w.Header().Set("Referrer-Policy", "no-referrer, same-origin")
 		w.Header().Set("X-XSS-Protection", "1; mode=block")
 		handler.ServeHTTP(w, r)
 	})
@@ -196,26 +172,25 @@ func main() {
 		template.Must(templates.Parse(string(MustAsset(filename))))
 	}
 
-	// static files
-	for _, filename := range getFiles("static") {
-		serveStatic(filename)
-	}
-
 	geekhack, err := NewGeekhack()
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer geekhack.db.Close()
 
+	staticFileServer := http.FileServer(
+		&assetfs.AssetFS{Asset: Asset,
+			AssetDir:  AssetDir,
+			AssetInfo: AssetInfo,
+			Prefix:    "static"})
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" {
-			http.NotFound(w, r)
-			return
-		}
-
-		ctx := NewContext(r)
-		if err := templates.ExecuteTemplate(w, "main", ctx); err != nil {
-			log.Println(err)
+		if r.URL.Path == "/" {
+			ctx := NewContext(r)
+			if err := templates.ExecuteTemplate(w, "main", ctx); err != nil {
+				log.Println(err)
+			}
+		} else {
+			staticFileServer.ServeHTTP(w, r)
 		}
 	})
 
