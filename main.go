@@ -22,7 +22,7 @@ import (
 var templates = template.New("").Funcs(template.FuncMap{"add": func(a, b int) int { return a + b }})
 
 var hostname_whitelist = []string{
-	"www.sadbox.org", "sadbox.org",
+	"www.sadbox.org", "sadbox.org", "mail.sadbox.org",
 	"www.sadbox.es", "sadbox.es",
 	"www.geekwhack.org", "geekwhack.org",
 }
@@ -199,6 +199,9 @@ func main() {
 	// Redirects to the right URL so I don't break old links
 	http.Handle("/ghstats", http.RedirectHandler("/geekhack/", http.StatusMovedPermanently))
 	http.Handle("/geekhack", http.RedirectHandler("/geekhack/", http.StatusMovedPermanently))
+
+	// This will redirect people to the gmail page
+	http.Handle("mail.sadbox.org/", http.RedirectHandler("https://mail.google.com/a/sadbox.org", http.StatusFound))
 
 	localhost_znc, err := url.Parse("http://127.0.0.1:6698")
 	if err != nil {
