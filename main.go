@@ -32,13 +32,25 @@ var hostname_whitelist = []string{
 
 var sadboxDB *sql.DB
 
+var channels []channel
+
+type channel struct {
+	LinkName    string
+	ChannelName string
+}
+
 type WebsiteName struct {
 	Title, Brand string
+}
+
+type Main struct {
+	Channels []channel
 }
 
 type TemplateContext struct {
 	Geekhack *Geekhack
 	Webname  *WebsiteName
+	Main     *Main
 }
 
 func NewContext(r *http.Request) *TemplateContext {
@@ -197,6 +209,7 @@ func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
 			ctx := NewContext(r)
+			ctx.Main = &Main{channels}
 			if err := templates.ExecuteTemplate(w, "main", ctx); err != nil {
 				log.Println(err)
 			}
@@ -210,19 +223,21 @@ func main() {
 		log.Fatal(err)
 	}
 	for rows.Next() {
-		var channel string
-		err := rows.Scan(&channel)
+		var channelName string
+		err := rows.Scan(&channelName)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		log.Println("Setting up: ", channel)
-		ircChanHandler, err := NewIRCChannel(channel)
+		chanInfo := channel{fmt.Sprintf("/%s/", strings.Trim(channelName, "#")), channelName}
+
+		ircChanHandler, err := NewIRCChannel(chanInfo)
 		if err != nil {
 			log.Fatal(err)
 		}
-		channel = strings.Trim(channel, "#")
-		http.Handle(fmt.Sprintf("/%s/", channel), ircChanHandler)
+		http.Handle(chanInfo.LinkName, ircChanHandler)
+
+		channels = append(channels, chanInfo)
 	}
 
 	// Redirects to the right URL so I don't break old links

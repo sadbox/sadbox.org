@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
@@ -50,14 +49,12 @@ type Tuple struct {
 	Count int
 }
 
-func NewIRCChannel(channel string) (*Geekhack, error) {
-	basePath := fmt.Sprintf("/%s/", strings.Trim(channel, "#"))
-
+func NewIRCChannel(chanInfo channel) (*Geekhack, error) {
 	geekhack := &Geekhack{
-		Channel:    channel,
-		basePath:   basePath,
-		pbmPath:    basePath + "postsbyminute",
-		pbdaPath:   basePath + "postsbydayall",
+		Channel:    chanInfo.ChannelName,
+		basePath:   chanInfo.LinkName,
+		pbmPath:    chanInfo.LinkName + "postsbyminute",
+		pbdaPath:   chanInfo.LinkName + "postsbydayall",
 		CurseWords: make(map[string][]Tuple),
 	}
 
