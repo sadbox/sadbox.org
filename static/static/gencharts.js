@@ -1,7 +1,7 @@
 $(function () {
      $("#spinner").show();
      $("#spinnerTwo").show();
-     $.getJSON('/geekhack/postsbyminute', function (data) {
+     $.getJSON(window.location.pathname + 'postsbyminute', function (data) {
         Highcharts.setOptions({
             global : {
                 useUTC : false
@@ -73,7 +73,7 @@ $(function () {
             series: data
         });
     });
-     $.getJSON('/geekhack/postsbydayall', function (data) {
+     $.getJSON(window.location.pathname + 'postsbydayall', function (data) {
         $("#spinnerTwo").hide();
         $("#postsByDayAll").show();
         $('#postsByDayAll').highcharts({

@@ -3,12 +3,15 @@ package main
 import (
 	"crypto/rand"
 	"crypto/tls"
+	"database/sql"
+	"fmt"
 	"html/template"
 	"log"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"path"
 	"strings"
 	"time"
@@ -26,6 +29,8 @@ var hostname_whitelist = []string{
 	"www.sadbox.es", "sadbox.es",
 	"www.geekwhack.org", "geekwhack.org",
 }
+
+var sadboxDB *sql.DB
 
 type WebsiteName struct {
 	Title, Brand string
@@ -172,11 +177,17 @@ func main() {
 		template.Must(templates.Parse(string(MustAsset(filename))))
 	}
 
-	geekhack, err := NewGeekhack()
+	var err error
+	sadboxDB, err = sql.Open("mysql", os.Getenv("GEEKHACK_DB"))
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer geekhack.db.Close()
+	defer sadboxDB.Close()
+
+	err = sadboxDB.Ping()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	staticFileServer := http.FileServer(
 		&assetfs.AssetFS{Asset: Asset,
@@ -194,8 +205,26 @@ func main() {
 		}
 	})
 
-	// Geekhack stats! the geekhack struct will handle the routing to sub-things
-	http.Handle("/geekhack/", geekhack)
+	rows, err := sadboxDB.Query(`SELECT Channel from Channels;`)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for rows.Next() {
+		var channel string
+		err := rows.Scan(&channel)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		log.Println("Setting up: ", channel)
+		ircChanHandler, err := NewIRCChannel(channel)
+		if err != nil {
+			log.Fatal(err)
+		}
+		channel = strings.Trim(channel, "#")
+		http.Handle(fmt.Sprintf("/%s/", channel), ircChanHandler)
+	}
+
 	// Redirects to the right URL so I don't break old links
 	http.Handle("/ghstats", http.RedirectHandler("/geekhack/", http.StatusMovedPermanently))
 	http.Handle("/geekhack", http.RedirectHandler("/geekhack/", http.StatusMovedPermanently))

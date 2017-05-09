@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -15,21 +15,24 @@ import (
 
 const (
 	postByDay = `select DATE(Time) as date, count(RID) as count from messages` +
-		` where channel = '#geekhack' group by date order by count` +
+		` where channel = ? group by date order by count` +
 		` desc limit 10;`
 	postByDayAll = `select DATE(Time) as date, count(RID) as count from messages` +
-		` where channel = '#geekhack' group by date order by date`
+		` where channel = ? group by date order by date`
 	totalPosts = `select Nick, COUNT(Nick) as Posts from messages where channel` +
-		` = '#geekhack' group by nick order by Posts desc limit 10;`
+		` = ? group by nick order by Posts desc limit 10;`
 	postsByMinute = `select count from (select HOUR(Time)*60+MINUTE(Time) as` +
 		` date, count(RID)/(SELECT DATEDIFF(NOW(), (SELECT MIN(Time)` +
-		` from messages where channel = '#geekhack'))) as count from` +
-		` messages where channel ='#geekhack' group by date order by date) as subquery;`
-	topTenWords = `select Nick, ` + "`" + `%[1]s` + "`" + ` from words order by ` + "`" + `%[1]s` + "`" + ` desc limit 10;`
+		` from messages where channel = ?))) as count from` +
+		` messages where channel = ? group by date order by date) as subquery;`
+	topTenWords = `select Nick, ` + "`" + `%[1]s` + "`" + " from `%[2]s_words` order by " + "`" + `%[1]s` + "`" + ` desc limit 10;`
 )
 
 type Geekhack struct {
-	db *sql.DB
+	Channel  string
+	basePath string
+	pbmPath  string
+	pbdaPath string
 
 	mutex                 sync.RWMutex // Protects:
 	PostsByDay            []Tuple
@@ -47,20 +50,15 @@ type Tuple struct {
 	Count int
 }
 
-func NewGeekhack() (*Geekhack, error) {
-	db, err := sql.Open("mysql", os.Getenv("GEEKHACK_DB"))
-	if err != nil {
-		return nil, err
-	}
-
-	err = db.Ping()
-	if err != nil {
-		return nil, err
-	}
+func NewIRCChannel(channel string) (*Geekhack, error) {
+	basePath := fmt.Sprintf("/%s/", strings.Trim(channel, "#"))
 
 	geekhack := &Geekhack{
+		Channel:    channel,
+		basePath:   basePath,
+		pbmPath:    basePath + "postsbyminute",
+		pbdaPath:   basePath + "postsbydayall",
 		CurseWords: make(map[string][]Tuple),
-		db:         db,
 	}
 
 	go geekhack.Update()
@@ -71,11 +69,11 @@ func NewGeekhack() (*Geekhack, error) {
 
 func (g *Geekhack) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.URL.Path {
-	case "/geekhack/":
+	case g.basePath:
 		g.Main(w, r)
-	case "/geekhack/postsbyminute":
+	case g.pbmPath:
 		g.pbmHandler(w, r)
-	case "/geekhack/postsbydayall":
+	case g.pbdaPath:
 		g.pbdaHandler(w, r)
 	default:
 		http.NotFound(w, r)
@@ -157,11 +155,17 @@ func (g *Geekhack) pbdaHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (g *Geekhack) runQuery(query string) ([]Tuple, error) {
+func (g *Geekhack) runQuery(query string, insertChannel bool) ([]Tuple, error) {
 	var nick string
 	var posts int
 	var tuple []Tuple
-	rows, err := g.db.Query(query)
+	var rows *sql.Rows
+	var err error
+	if insertChannel {
+		rows, err = sadboxDB.Query(query, g.Channel)
+	} else {
+		rows, err = sadboxDB.Query(query)
+	}
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -180,7 +184,7 @@ func (g *Geekhack) runQuery(query string) ([]Tuple, error) {
 
 func (g *Geekhack) UpdateCurseWords() (map[string][]Tuple, error) {
 	CurseWords := make(map[string][]Tuple)
-	query, err := g.db.Query(`SELECT * FROM words LIMIT 1`)
+	query, err := sadboxDB.Query(`SELECT * FROM words LIMIT 1`)
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +197,8 @@ func (g *Geekhack) UpdateCurseWords() (map[string][]Tuple, error) {
 		if word == "Nick" {
 			continue
 		}
-		tuple, err := g.runQuery(fmt.Sprintf(topTenWords, word))
+		topTenWordsQuery := fmt.Sprintf(topTenWords, word, g.Channel)
+		tuple, err := g.runQuery(topTenWordsQuery, false)
 		if err != nil {
 			return nil, err
 		}
@@ -206,7 +211,7 @@ func (g *Geekhack) UpdatePostByDayAll() ([][]int64, error) {
 	var date string
 	var posts int
 	var returnValue [][]int64
-	rows, err := g.db.Query(postByDayAll)
+	rows, err := sadboxDB.Query(postByDayAll, g.Channel)
 	if err != nil {
 		return nil, err
 	}
@@ -228,13 +233,13 @@ func (g *Geekhack) UpdatePostByDayAll() ([][]int64, error) {
 
 func (g *Geekhack) Update() {
 	start := time.Now()
-	PostsByDay, err := g.runQuery(postByDay)
+	PostsByDay, err := g.runQuery(postByDay, true)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	TotalPosts, err := g.runQuery(totalPosts)
+	TotalPosts, err := g.runQuery(totalPosts, true)
 	if err != nil {
 		log.Println(err)
 		return
@@ -251,7 +256,7 @@ func (g *Geekhack) Update() {
 
 	start = time.Now()
 	PostsByMinute := []float64{}
-	rows, err := g.db.Query(postsByMinute)
+	rows, err := sadboxDB.Query(postsByMinute, g.Channel, g.Channel)
 	if err != nil {
 		log.Println(err)
 		return
