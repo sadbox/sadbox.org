@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"html/template"
 	"log"
+	mathRand "math/rand"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -217,6 +218,8 @@ func main() {
 			staticFileServer.ServeHTTP(w, r)
 		}
 	})
+
+	mathRand.Seed(time.Now().UnixNano())
 
 	rows, err := sadboxDB.Query(`SELECT Channel from Channels;`)
 	if err != nil {
