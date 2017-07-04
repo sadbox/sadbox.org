@@ -59,8 +59,9 @@ func NewContext(r *http.Request) *TemplateContext {
 	host := "sadbox.org"
 	for _, v := range hostname_whitelist {
 		if v == r.Host {
-			title = strings.Replace(r.Host, ".", " \u00B7 ", -1)
-			host = r.Host
+			trimmed := strings.TrimPrefix(r.Host, "www.")
+			title = strings.Replace(trimmed, ".", " \u00B7 ", -1)
+			host = trimmed
 			break
 		}
 	}
