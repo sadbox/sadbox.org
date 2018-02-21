@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/daaku/go.httpgzip"
+	"github.com/NYTimes/gziphandler"
 	"golang.org/x/crypto/acme/autocert"
 )
 
@@ -244,7 +244,7 @@ func main() {
 	http.Handle("/znc/", httputil.NewSingleHostReverseProxy(localhost_znc))
 	http.Handle("/znc", http.RedirectHandler("/znc/", http.StatusMovedPermanently))
 
-	servemux := httpgzip.NewHandler(
+	servemux := gziphandler.GzipHandler(
 		CatchPanic(
 			Log(
 				AddHeaders(http.DefaultServeMux))))
