@@ -13,17 +13,20 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
-	"path"
 	"strings"
 	"time"
 
 	"github.com/daaku/go.httpgzip"
-	assetfs "github.com/elazarl/go-bindata-assetfs"
 	"golang.org/x/crypto/acme/autocert"
 )
 
-//go:generate go-bindata ./views ./static/...
+//go:generate esc -private -o bindata.go -prefix static ./views ./static/
 var templates = template.New("").Funcs(template.FuncMap{"add": func(a, b int) int { return a + b }})
+var templateSources = []string{
+	"/views/main.tmpl",
+	"/views/_util.tmpl",
+	"/views/geekhack.tmpl",
+}
 
 var hostname_whitelist = []string{
 	"www.sadbox.org", "sadbox.org", "mail.sadbox.org",
@@ -138,19 +141,6 @@ func Log(handler http.Handler) http.Handler {
 	})
 }
 
-func getFiles(dir string) []string {
-	files, err := AssetDir(dir)
-	if err != nil {
-		return []string{dir}
-	}
-
-	var outFiles []string
-	for _, filename := range files {
-		outFiles = append(outFiles, getFiles(path.Join(dir, filename))...)
-	}
-	return outFiles
-}
-
 type sessionKeys struct {
 	keys [][32]byte
 	buf  []byte
@@ -187,8 +177,8 @@ func (sk *sessionKeys) Spin() {
 func main() {
 	log.Println("Starting sadbox.org")
 
-	for _, filename := range getFiles("views") {
-		template.Must(templates.Parse(string(MustAsset(filename))))
+	for _, filename := range templateSources {
+		template.Must(templates.Parse(_escFSMustString(false, filename)))
 	}
 
 	var err error
@@ -203,11 +193,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	staticFileServer := http.FileServer(
-		&assetfs.AssetFS{Asset: Asset,
-			AssetDir:  AssetDir,
-			AssetInfo: AssetInfo,
-			Prefix:    "static"})
+	staticFileServer := http.FileServer(_escFS(false))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
 			ctx := NewContext(r)
