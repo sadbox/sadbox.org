@@ -1,0 +1,9 @@
+MODULE                          VERSION
+github.com/sadbox/sadbox.org    -
+github.com/NYTimes/gziphandler  v1.0.1
+github.com/davecgh/go-spew      v1.1.0
+github.com/go-sql-driver/mysql  v0.0.0-20161201115036-a0583e0143b1
+github.com/pmezard/go-difflib   v1.0.0
+github.com/stretchr/objx        v0.0.0-20180106011353-facf9a85c22f
+github.com/stretchr/testify     v1.2.1
+golang.org/x/crypto             v0.0.0-20180219163459-432090b8f568
