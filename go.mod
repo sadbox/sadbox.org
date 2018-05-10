@@ -1,8 +1,8 @@
-module "github.com/sadbox/sadbox.org"
+module github.com/sadbox/sadbox.org
 
 require (
-	"github.com/NYTimes/gziphandler" v1.0.1
-	"github.com/go-sql-driver/mysql" v0.0.0-20161201115036-a0583e0143b1
-	"github.com/stretchr/testify" v1.2.1
-	"golang.org/x/crypto" v0.0.0-20180219163459-432090b8f568
+	github.com/NYTimes/gziphandler v1.0.1
+	github.com/go-sql-driver/mysql v1.0.3
+	github.com/stretchr/objx v0.0.0-20180426105006-a5cfa15c000a
+	golang.org/x/crypto v0.0.0-20180509205747-2d027ae1dddd
 )

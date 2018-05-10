@@ -81,7 +81,7 @@ func (g *Geekhack) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (g *Geekhack) Main(w http.ResponseWriter, r *http.Request) {
 	g.mutex.RLock()
 	defer g.mutex.RUnlock()
-	ctx := NewContext(r)
+	ctx := NewContext(r, g.Channel)
 	ctx.Geekhack = g
 	if err := templates.ExecuteTemplate(w, "geekhack", ctx); err != nil {
 		log.Println(err)

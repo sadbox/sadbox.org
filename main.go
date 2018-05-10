@@ -32,6 +32,7 @@ var hostname_whitelist = []string{
 	"www.sadbox.org", "sadbox.org", "mail.sadbox.org",
 	"www.sadbox.es", "sadbox.es",
 	"www.geekwhack.org", "geekwhack.org",
+	"www.sadbox.xyz", "sadbox.xyz",
 }
 
 var sadboxDB *sql.DB
@@ -57,13 +58,13 @@ type TemplateContext struct {
 	Main     *Main
 }
 
-func NewContext(r *http.Request) *TemplateContext {
+func NewContext(r *http.Request, appendToTitle string) *TemplateContext {
 	title := "sadbox \u00B7 org"
 	host := "sadbox.org"
 	for _, v := range hostname_whitelist {
 		if v == r.Host {
 			trimmed := strings.TrimPrefix(r.Host, "www.")
-			title = strings.Replace(trimmed, ".", " \u00B7 ", -1)
+			title = strings.Replace(trimmed, ".", " \u00B7 ", -1) + " - " + appendToTitle
 			host = trimmed
 			break
 		}
@@ -196,7 +197,7 @@ func main() {
 	staticFileServer := http.FileServer(_escFS(false))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
-			ctx := NewContext(r)
+			ctx := NewContext(r, "home")
 			ctx.Main = &Main{channels}
 			if err := templates.ExecuteTemplate(w, "main", ctx); err != nil {
 				log.Println(err)
