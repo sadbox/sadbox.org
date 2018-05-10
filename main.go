@@ -64,14 +64,14 @@ func NewContext(r *http.Request, appendToTitle string) *TemplateContext {
 	for _, v := range hostname_whitelist {
 		if v == r.Host {
 			trimmed := strings.TrimPrefix(r.Host, "www.")
-			title = strings.Replace(trimmed, ".", " \u00B7 ", -1) + " - " + appendToTitle
+			title = strings.Replace(trimmed, ".", " \u00B7 ", -1)
 			host = trimmed
 			break
 		}
 	}
 	return &TemplateContext{
 		Webname: &WebsiteName{
-			title,
+			title + " - " + appendToTitle,
 			host,
 		},
 	}
@@ -103,13 +103,9 @@ func RedirectToHTTPS(handler http.Handler) http.Handler {
 			return
 		}
 
+		// Don't bother sending IPs to https
 		ip := net.ParseIP(host)
 		if ip == nil {
-			SendToHTTPS(w, r)
-			return
-		}
-
-		if !ip.IsLoopback() {
 			SendToHTTPS(w, r)
 			return
 		}
@@ -250,13 +246,6 @@ func main() {
 			Log(
 				AddHeaders(http.DefaultServeMux))))
 
-	httpSrv := &http.Server{
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 5 * time.Second,
-		Handler:      RedirectToHTTPS(servemux),
-	}
-	go func() { log.Fatal(httpSrv.ListenAndServe()) }()
-
 	m := autocert.Manager{
 		Prompt:     autocert.AcceptTOS,
 		Cache:      autocert.DirCache("/home/sadbox-web/cert-cache"),
@@ -280,6 +269,13 @@ func main() {
 	}
 
 	go NewSessionKeys(tlsconfig).Spin()
+
+	httpSrv := &http.Server{
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
+		Handler:      m.HTTPHandler(RedirectToHTTPS(servemux)),
+	}
+	go func() { log.Fatal(httpSrv.ListenAndServe()) }()
 
 	server := &http.Server{
 		Addr:         ":https",
