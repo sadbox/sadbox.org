@@ -100,7 +100,7 @@ func RedirectToHTTPS(handler http.Handler) http.Handler {
 		log.Println(r.Host)
 
 		// Don't bother sending IPs to https
-		ip := net.ParseIP(r.Host)
+		ip := net.ParseIP(strings.Trim(r.Host, "[]"))
 		if ip != nil {
 			handler.ServeHTTP(w, r)
 			return
@@ -124,7 +124,7 @@ func RedirectToHTTPS(handler http.Handler) http.Handler {
 func AddHeaders(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "max-age=120")
-		if r.URL.Scheme == "https" {
+		if r.TLS != nil {
 			w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
 		}
 		w.Header().Set("Content-Security-Policy", "default-src 'self'; object-src 'none'; frame-ancestors 'none'")
