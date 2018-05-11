@@ -97,15 +97,22 @@ func SendToHTTPS(w http.ResponseWriter, r *http.Request) {
 
 func RedirectToHTTPS(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		host, _, err := net.SplitHostPort(r.RemoteAddr)
+		log.Println(r.Host)
+
+		// Don't bother sending IPs to https
+		ip := net.ParseIP(r.Host)
+		if ip != nil {
+			handler.ServeHTTP(w, r)
+			return
+		}
+
+		// If r.Host isn't an ip, maybe it's an ip:port?
+		host, _, err := net.SplitHostPort(r.Host)
 		if err != nil {
 			SendToHTTPS(w, r)
 			return
 		}
-
-		// Don't bother sending IPs to https
-		ip := net.ParseIP(host)
-		if ip == nil {
+		if ip = net.ParseIP(host); ip == nil { // Couldn't parse the split ip
 			SendToHTTPS(w, r)
 			return
 		}
@@ -117,7 +124,9 @@ func RedirectToHTTPS(handler http.Handler) http.Handler {
 func AddHeaders(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "max-age=120")
-		w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
+		if r.URL.Scheme == "https" {
+			w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
+		}
 		w.Header().Set("Content-Security-Policy", "default-src 'self'; object-src 'none'; frame-ancestors 'none'")
 		w.Header().Set("X-Frame-Options", "DENY")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
