@@ -1,6 +1,7 @@
 // Go MySQL Driver - A MySQL-Driver for Go's database/sql package
 //
-// Copyright 2012 The Go-MySQL-Driver Authors. All rights reserved.
+// Copyright 2012 Julien Schmidt. All rights reserved.
+// http://www.julienschmidt.com
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this file,
@@ -11,7 +12,7 @@ package mysql
 const (
 	minProtocolVersion byte = 10
 	maxPacketSize           = 1<<24 - 1
-	timeFormat              = "2006-01-02 15:04:05.999999"
+	timeFormat              = "2006-01-02 15:04:05"
 )
 
 // MySQL constants documentation:
@@ -24,7 +25,6 @@ const (
 	iERR         byte = 0xff
 )
 
-// https://dev.mysql.com/doc/internals/en/capability-flags.html#packet-Protocol::CapabilityFlags
 type clientFlag uint32
 
 const (
@@ -46,13 +46,6 @@ const (
 	clientSecureConn
 	clientMultiStatements
 	clientMultiResults
-	clientPSMultiResults
-	clientPluginAuth
-	clientConnectAttrs
-	clientPluginAuthLenEncClientData
-	clientCanHandleExpiredPasswords
-	clientSessionTrack
-	clientDeprecateEOF
 )
 
 const (
@@ -76,7 +69,7 @@ const (
 	comBinlogDump
 	comTableDump
 	comConnectOut
-	comRegisterSlave
+	comRegiserSlave
 	comStmtPrepare
 	comStmtExecute
 	comStmtSendLongData
@@ -86,7 +79,6 @@ const (
 	comStmtFetch
 )
 
-// https://dev.mysql.com/doc/internals/en/com-query-response.html#packet-Protocol::ColumnType
 const (
 	fieldTypeDecimal byte = iota
 	fieldTypeTiny
@@ -107,8 +99,7 @@ const (
 	fieldTypeBit
 )
 const (
-	fieldTypeJSON byte = iota + 0xf5
-	fieldTypeNewDecimal
+	fieldTypeNewDecimal byte = iota + 0xf6
 	fieldTypeEnum
 	fieldTypeSet
 	fieldTypeTinyBLOB
@@ -139,25 +130,4 @@ const (
 	flagUnknown2
 	flagUnknown3
 	flagUnknown4
-)
-
-// http://dev.mysql.com/doc/internals/en/status-flags.html
-type statusFlag uint16
-
-const (
-	statusInTrans statusFlag = 1 << iota
-	statusInAutocommit
-	statusReserved // Not in documentation
-	statusMoreResultsExists
-	statusNoGoodIndexUsed
-	statusNoIndexUsed
-	statusCursorExists
-	statusLastRowSent
-	statusDbDropped
-	statusNoBackslashEscapes
-	statusMetadataChanged
-	statusQueryWasSlow
-	statusPsOutParams
-	statusInTransReadonly
-	statusSessionStateChanged
 )
