@@ -183,6 +183,7 @@ func main() {
 	log.Println("Starting sadbox.org")
 
 	template.Must(templates.ParseFS(staticFiles, "views/*.tmpl"))
+	log.Println(templates.DefinedTemplates())
 
 	var err error
 	sadboxDB, err = sql.Open("mysql", os.Getenv("GEEKHACK_DB"))
