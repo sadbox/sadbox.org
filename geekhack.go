@@ -335,7 +335,7 @@ func movingAverage(input []float64, size int) []float64 {
 }
 
 func (g *Geekhack) Updater() {
-	ticker := time.Tick(4 * time.Minute)
+	ticker := time.Tick(4 * time.Hour)
 	for _ = range ticker {
 		time.Sleep(time.Duration(rand.Intn(60)) * time.Second)
 		g.Update()
