@@ -83,7 +83,7 @@ func (g *Geekhack) Main(w http.ResponseWriter, r *http.Request) {
 	defer g.mutex.RUnlock()
 	ctx := NewContext(r, g.Channel)
 	ctx.Geekhack = g
-	if err := templates.ExecuteTemplate(w, "geekhack", ctx); err != nil {
+	if err := templates.ExecuteTemplate(w, "geekhack.tmpl", ctx); err != nil {
 		log.Println(err)
 	}
 }

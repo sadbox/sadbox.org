@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"html/template"
 	"log"
+	"io/fs"
 	mathRand "math/rand"
 	"net"
 	"net/http"
 	"net/http/httputil"
+	"embed"
 	"net/url"
 	"os"
 	"strings"
@@ -20,13 +22,10 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 )
 
-//go:generate esc -private -o bindata.go -prefix static ./views ./static-files/
+//go:embed views static-files
+var staticFiles embed.FS
+
 var templates = template.New("").Funcs(template.FuncMap{"add": func(a, b int) int { return a + b }})
-var templateSources = []string{
-	"/views/main.tmpl",
-	"/views/_util.tmpl",
-	"/views/geekhack.tmpl",
-}
 
 var hostname_whitelist = []string{
 	"www.sadbox.org", "sadbox.org", "mail.sadbox.org",
@@ -183,9 +182,7 @@ func (sk *sessionKeys) Spin() {
 func main() {
 	log.Println("Starting sadbox.org")
 
-	for _, filename := range templateSources {
-		template.Must(templates.Parse(_escFSMustString(false, filename)))
-	}
+	template.Must(templates.ParseFS(staticFiles, "views/*.tmpl"))
 
 	var err error
 	sadboxDB, err = sql.Open("mysql", os.Getenv("GEEKHACK_DB"))
@@ -199,12 +196,16 @@ func main() {
 		log.Fatal(err)
 	}
 
-	staticFileServer := http.FileServer(_escFS(false))
+	onlyStatic, err := fs.Sub(staticFiles, "static-files")
+	if err != nil {
+		log.Fatal(err)
+	}
+	staticFileServer := http.FileServer(http.FS(onlyStatic))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
 			ctx := NewContext(r, "home")
 			ctx.Main = &Main{channels}
-			if err := templates.ExecuteTemplate(w, "main", ctx); err != nil {
+			if err := templates.ExecuteTemplate(w, "main.tmpl", ctx); err != nil {
 				log.Println(err)
 			}
 		} else {

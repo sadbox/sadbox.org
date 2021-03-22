@@ -1,5 +1,5 @@
 {{define "geekhack" -}}
-{{template "header" . -}}
+{{template "header.tmpl" . -}}
 
 <div class="container">
     <h1>{{.Geekhack.Channel}} statistics <small>since 2012-12-17 @ 04:04:00 UTC</small></h1>
@@ -63,5 +63,5 @@
 <script src="/static/gencharts.js"></script>
 <link href="/static/geekhack.css" rel="stylesheet">
 <link href="/vendor/highcharts.css" rel="stylesheet">
-{{template "footer"}}
+{{template "footer.tmpl"}}
 {{end}}
