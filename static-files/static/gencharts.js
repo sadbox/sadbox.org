@@ -12,7 +12,8 @@ $(function () {
         var currentime = new Date();
         $('#postsByMinute').highcharts({
             chart: {
-                type: 'area'
+                type: 'area',
+                styledMode: true
             },
             title: {
                 text: 'Activity in channel by time of day'
@@ -79,7 +80,8 @@ $(function () {
         $('#postsByDayAll').highcharts({
             chart: {
                 type: 'area',
-                zoomType: 'x'
+                zoomType: 'x',
+                styledMode: true
             },
             title: {
                 text: 'Activity in channel over time'
