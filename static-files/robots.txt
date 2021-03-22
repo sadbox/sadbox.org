@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /static/
+Disallow: /harming-humans/
+Disallow: /ignoring-human-orders/
+Disallow: /harm-to-self/
+Sitemap: https://sadbox.org/sitemap.xml
