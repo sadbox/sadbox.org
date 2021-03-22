@@ -1,9 +1,0 @@
-/* TEAM */
-The Dude: James McGuire
-Site: sadbox.org
-Email: james@sadbox.org
-Location: San Francisco, CA, USA
-
-/* SITE */
-Components: golang, mysql, highcharts, bootstrap, and a pinch of jquery
-Software: vim and the great suite of golang tools

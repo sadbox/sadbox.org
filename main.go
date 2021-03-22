@@ -20,7 +20,7 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 )
 
-//go:generate esc -private -o bindata.go -prefix static ./views ./static/
+//go:generate esc -private -o bindata.go -prefix static ./views ./static-files/
 var templates = template.New("").Funcs(template.FuncMap{"add": func(a, b int) int { return a + b }})
 var templateSources = []string{
 	"/views/main.tmpl",
