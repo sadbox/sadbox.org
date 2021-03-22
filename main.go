@@ -1,18 +1,19 @@
 package main
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/tls"
 	"database/sql"
+	"embed"
 	"fmt"
 	"html/template"
-	"log"
 	"io/fs"
+	"log"
 	mathRand "math/rand"
 	"net"
 	"net/http"
 	"net/http/httputil"
-	"embed"
 	"net/url"
 	"os"
 	"strings"
