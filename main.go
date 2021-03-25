@@ -213,6 +213,7 @@ func main() {
 			staticFileServer.ServeHTTP(w, r)
 		}
 	})
+	http.HandleFunc("/dick/", http.StripPrefix("/dick/", http.FileServer(http.Dir("/home/sadbox-web/dick/"))))
 
 	mathRand.Seed(time.Now().UnixNano())
 
