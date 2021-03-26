@@ -12,8 +12,6 @@ import (
 	mathRand "math/rand"
 	"net"
 	"net/http"
-	"net/http/httputil"
-	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -247,13 +245,6 @@ func main() {
 	// This will redirect people to the gmail page
 	http.Handle("mail.sadbox.org/", http.RedirectHandler("https://mail.google.com/a/sadbox.org", http.StatusFound))
 
-	localhost_znc, err := url.Parse("http://127.0.0.1:6698")
-	if err != nil {
-		log.Fatal(err)
-	}
-	http.Handle("/znc/", httputil.NewSingleHostReverseProxy(localhost_znc))
-	http.Handle("/znc", http.RedirectHandler("/znc/", http.StatusMovedPermanently))
-
 	servemux := gziphandler.GzipHandler(
 		CatchPanic(
 			Log(
@@ -284,7 +275,8 @@ func main() {
 	go NewSessionKeys(tlsconfig).Spin()
 
 	httpSrv := &http.Server{
-		ReadTimeout:  5 * time.Second,
+		ReadTimeout:  60 * time.Minute,
+		ReadHeaderTimeout: 5 * time.Second,
 		WriteTimeout: 5 * time.Second,
 		Handler:      m.HTTPHandler(RedirectToHTTPS(servemux)),
 	}
