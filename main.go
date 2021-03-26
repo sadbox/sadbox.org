@@ -278,6 +278,7 @@ func main() {
 		ReadTimeout:  60 * time.Minute,
 		ReadHeaderTimeout: 5 * time.Second,
 		WriteTimeout: 5 * time.Second,
+		IdleTimeout: 30 * time.Minute,
 		Handler:      m.HTTPHandler(RedirectToHTTPS(servemux)),
 	}
 	go func() { log.Fatal(httpSrv.ListenAndServe()) }()
