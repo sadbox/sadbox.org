@@ -15,6 +15,8 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -213,6 +215,20 @@ func main() {
 			staticFileServer.ServeHTTP(w, r)
 		}
 	})
+
+	entries, err := os.ReadDir("/home/")
+	if err != nil {
+		panic(err)
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		pathToFolder := filepath.Join("/home", entry.Name(), "public-html") + "/"
+		webPath := path.Join("/p", entry.Name()) + "/"
+		http.Handle(webPath, http.StripPrefix(webPath, http.FileServer(http.Dir(pathToFolder))))
+	}
+
 	http.Handle("/dick/", http.StripPrefix("/dick/", http.FileServer(http.Dir("/home/sadbox-web/dick/"))))
 
 	mathRand.Seed(time.Now().UnixNano())
