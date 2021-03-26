@@ -275,8 +275,8 @@ func main() {
 		Handler:      servemux,
 		TLSConfig:    tlsconfig,
 		ReadTimeout:  60 * time.Minute,
-		ReadHeaderTimeout: 5 * time.Second,
-		WriteTimeout: 5 * time.Second,
+		ReadHeaderTimeout: 30 * time.Second,
+		WriteTimeout: 60 * time.Minute,
 		IdleTimeout: 30 * time.Minute,
 	}
 	log.Fatal(server.ListenAndServeTLS("", ""))
