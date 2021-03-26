@@ -258,27 +258,14 @@ func main() {
 		ForceRSA:   true,
 	}
 
-	var certs []tls.Certificate
-	sadboxCert, err := tls.LoadX509KeyPair("/home/sadbox-web/cert-cache/sadbox.org",
-		"/home/sadbox-web/cert-cache/sadbox.org")
-
-	if err == nil {
-		certs = append(certs, sadboxCert)
-	}
-
-	tlsconfig := &tls.Config{
-		PreferServerCipherSuites: true,
-		GetCertificate:           m.GetCertificate,
-		Certificates:             certs,
-	}
+	tlsconfig := m.TLSConfig()
+	tlsconfig.PreferServerCipherSuites = true
 
 	go NewSessionKeys(tlsconfig).Spin()
 
 	httpSrv := &http.Server{
-		ReadTimeout:  60 * time.Minute,
-		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 5 * time.Second,
-		IdleTimeout: 30 * time.Minute,
 		Handler:      m.HTTPHandler(RedirectToHTTPS(servemux)),
 	}
 	go func() { log.Fatal(httpSrv.ListenAndServe()) }()
@@ -287,8 +274,10 @@ func main() {
 		Addr:         ":https",
 		Handler:      servemux,
 		TLSConfig:    tlsconfig,
-		ReadTimeout:  5 * time.Second,
+		ReadTimeout:  60 * time.Minute,
+		ReadHeaderTimeout: 5 * time.Second,
 		WriteTimeout: 5 * time.Second,
+		IdleTimeout: 30 * time.Minute,
 	}
 	log.Fatal(server.ListenAndServeTLS("", ""))
 }
