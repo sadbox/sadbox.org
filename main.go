@@ -139,7 +139,7 @@ func Log(handler http.Handler) http.Handler {
 		if remoteHost == "" {
 			remoteHost = r.RemoteAddr
 		}
-		log.Printf("%s %s %s", remoteHost, r.Method, r.URL)
+		log.Printf("%s %s %s %s", remoteHost, r.Host, r.Method, r.URL)
 		handler.ServeHTTP(w, r)
 	})
 }
@@ -201,7 +201,9 @@ func main() {
 	}
 	staticFileServer := http.FileServer(http.FS(onlyStatic))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/" {
+		if strings.HasSuffix(r.Host, "geekwhack.org") {
+			fmt.Fprintf(w, "rip ripster55\n")
+		} else if r.URL.Path == "/" {
 			ctx := NewContext(r, "home")
 			ctx.Main = &Main{channels}
 			if err := templates.ExecuteTemplate(w, "main.tmpl", ctx); err != nil {
@@ -260,6 +262,7 @@ func main() {
 
 	tlsconfig := m.TLSConfig()
 	tlsconfig.PreferServerCipherSuites = true
+	tlsconfig.MinVersion = tls.VersionTLS13
 
 	go NewSessionKeys(tlsconfig).Spin()
 
@@ -271,13 +274,13 @@ func main() {
 	go func() { log.Fatal(httpSrv.ListenAndServe()) }()
 
 	server := &http.Server{
-		Addr:         ":https",
-		Handler:      servemux,
-		TLSConfig:    tlsconfig,
-		ReadTimeout:  60 * time.Minute,
+		Addr:              ":https",
+		Handler:           servemux,
+		TLSConfig:         tlsconfig,
+		ReadTimeout:       60 * time.Minute,
 		ReadHeaderTimeout: 30 * time.Second,
-		WriteTimeout: 60 * time.Minute,
-		IdleTimeout: 30 * time.Minute,
+		WriteTimeout:      60 * time.Minute,
+		IdleTimeout:       30 * time.Minute,
 	}
 	log.Fatal(server.ListenAndServeTLS("", ""))
 }
