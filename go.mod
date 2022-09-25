@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/go-sql-driver/mysql v1.6.0
-	golang.org/x/crypto v0.0.0-20220209155544-dad33157f4bf
+	golang.org/x/crypto v0.0.0-20220924013350-4ba4fb4dd9e7
 )
 
 require (
