@@ -5,12 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"math/rand"
 	"net/http"
 	"sync"
 	"time"
-
-	_ "github.com/go-sql-driver/mysql"
 )
 
 const (
@@ -21,10 +18,9 @@ const (
 		` where channel = ? group by date order by date`
 	totalPosts = `select Nick, COUNT(Nick) as Posts from messages where channel` +
 		` = ? group by nick order by Posts desc limit 10;`
-	postsByMinute = `select count from (select HOUR(Time)*60+MINUTE(Time) as` +
-		` date, count(RID)/(SELECT DATEDIFF(NOW(), (SELECT MIN(Time)` +
-		` from messages where channel = ?))) as count from` +
-		` messages where channel = ? group by date order by date) as subquery;`
+	postsByMinute = `select count from (select COUNT(*) count,` +
+		`((strftime ('%H', Time) * 60) + strftime ('%M',Time)) minute ` +
+		`from messages where channel = ? group by minute order by minute);`
 	topTenWords = `select Nick, ` + "`" + `%[1]s` + "`" + " from `%[2]s_words` order by " + "`" + `%[1]s` + "`" + ` desc limit 10;`
 )
 
@@ -60,7 +56,6 @@ func NewIRCChannel(chanInfo channel) (*Geekhack, error) {
 	}
 
 	go geekhack.Update()
-	go geekhack.Updater()
 
 	return geekhack, nil
 }
@@ -332,12 +327,4 @@ func movingAverage(input []float64, size int) []float64 {
 		result[i] /= float64(len(input[start:end]))
 	}
 	return result
-}
-
-func (g *Geekhack) Updater() {
-	ticker := time.Tick(4 * time.Hour)
-	for _ = range ticker {
-		time.Sleep(time.Duration(rand.Intn(60)) * time.Second)
-		g.Update()
-	}
 }

@@ -16,12 +16,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/NYTimes/gziphandler"
-	"golang.org/x/crypto/acme/autocert"
+	"github.com/klauspost/compress/gzhttp"
+	"github.com/mattn/go-sqlite3"
+	"github.com/rs/zerolog"
+	sqldblogger "github.com/simukti/sqldb-logger"
+	"github.com/simukti/sqldb-logger/logadapter/zerologadapter"
 )
 
 //go:embed views static-files
 var staticFiles embed.FS
+
+var logger = log.New(os.Stdout, "sadbox.org: ", log.Ldate|log.Ltime|log.Lshortfile)
 
 var templates = template.New("").Funcs(template.FuncMap{"add": func(a, b int) int { return a + b }})
 
@@ -78,7 +83,7 @@ func CatchPanic(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if r := recover(); r != nil {
-				log.Printf("Recovered from panic: %v", r)
+				logger.Printf("Recovered from panic: %v", r)
 				http.Error(w, "Something went wrong!", http.StatusInternalServerError)
 			}
 		}()
@@ -94,7 +99,7 @@ func SendToHTTPS(w http.ResponseWriter, r *http.Request) {
 
 func RedirectToHTTPS(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println(r.Host)
+		logger.Println(r.Host)
 
 		// Don't bother sending IPs to https
 		ip := net.ParseIP(strings.Trim(r.Host, "[]"))
@@ -139,7 +144,7 @@ func Log(handler http.Handler) http.Handler {
 		if remoteHost == "" {
 			remoteHost = r.RemoteAddr
 		}
-		log.Printf("%s %s %s %s", remoteHost, r.Host, r.Method, r.URL)
+		logger.Printf("%s %s %s %s", remoteHost, r.Host, r.Method, r.URL)
 		handler.ServeHTTP(w, r)
 	})
 }
@@ -167,7 +172,7 @@ func (sk *sessionKeys) addNewKey() {
 	if len(sk.keys) > 4 {
 		sk.keys = sk.keys[:5]
 	}
-	log.Println("Rotating Session Keys")
+	logger.Println("Rotating Session Keys")
 	sk.tls.SetSessionTicketKeys(sk.keys)
 }
 
@@ -178,28 +183,29 @@ func (sk *sessionKeys) Spin() {
 }
 
 func main() {
-	log.Println("Starting sadbox.org")
+	logger.Println("Starting sadbox.org")
 
 	template.Must(templates.ParseFS(staticFiles, "views/*.tmpl"))
-	log.Println(templates.DefinedTemplates())
+	logger.Println(templates.DefinedTemplates())
 
 	var err error
-	sadboxDB, err = sql.Open("mysql", os.Getenv("GEEKHACK_DB"))
-	if err != nil {
-		log.Fatal(err)
-	}
+	dsn := "file:/db/sadbot_archive.db"
+	loggerAdapter := zerologadapter.New(zerolog.New(os.Stdout))
+	sadboxDB = sqldblogger.OpenDriver(dsn, &sqlite3.SQLiteDriver{}, loggerAdapter)
 	defer sadboxDB.Close()
 
 	err = sadboxDB.Ping()
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 
 	onlyStatic, err := fs.Sub(staticFiles, "static-files")
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
+	logger.Println("before db open")
 	staticFileServer := http.FileServer(http.FS(onlyStatic))
+	logger.Println("after db open")
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.Host, "geekwhack.org") {
 			fmt.Fprintf(w, "rip ripster55\n")
@@ -207,33 +213,31 @@ func main() {
 			ctx := NewContext(r, "home")
 			ctx.Main = &Main{channels}
 			if err := templates.ExecuteTemplate(w, "main.tmpl", ctx); err != nil {
-				log.Println(err)
+				logger.Println(err)
 			}
 		} else {
 			staticFileServer.ServeHTTP(w, r)
 		}
 	})
 
-	http.Handle("/dick/", http.StripPrefix("/dick/", http.FileServer(http.Dir("/home/sadbox-web/dick/"))))
-
 	mathRand.Seed(time.Now().UnixNano())
 
 	rows, err := sadboxDB.Query(`SELECT Channel from Channels;`)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 	for rows.Next() {
 		var channelName string
 		err := rows.Scan(&channelName)
 		if err != nil {
-			log.Fatal(err)
+			logger.Fatal(err)
 		}
 
 		chanInfo := channel{fmt.Sprintf("/%s/", strings.Trim(channelName, "#")), channelName}
 
 		ircChanHandler, err := NewIRCChannel(chanInfo)
 		if err != nil {
-			log.Fatal(err)
+			logger.Fatal(err)
 		}
 		http.Handle(chanInfo.LinkName, ircChanHandler)
 
@@ -247,40 +251,18 @@ func main() {
 	// This will redirect people to the gmail page
 	http.Handle("mail.sadbox.org/", http.RedirectHandler("https://mail.google.com/a/sadbox.org", http.StatusFound))
 
-	servemux := gziphandler.GzipHandler(
+	servemux := gzhttp.GzipHandler(
 		CatchPanic(
 			Log(
 				AddHeaders(http.DefaultServeMux))))
 
-	m := autocert.Manager{
-		Prompt:     autocert.AcceptTOS,
-		Cache:      autocert.DirCache("/home/sadbox-web/cert-cache"),
-		HostPolicy: autocert.HostWhitelist(hostname_whitelist...),
-		Email:      "blue6249@gmail.com",
-		ForceRSA:   true,
-	}
-
-	tlsconfig := m.TLSConfig()
-	tlsconfig.PreferServerCipherSuites = true
-	tlsconfig.MinVersion = tls.VersionTLS13
-
-	go NewSessionKeys(tlsconfig).Spin()
-
-	httpSrv := &http.Server{
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 5 * time.Second,
-		Handler:      m.HTTPHandler(RedirectToHTTPS(servemux)),
-	}
-	go func() { log.Fatal(httpSrv.ListenAndServe()) }()
-
 	server := &http.Server{
-		Addr:              ":https",
+		Addr:              ":9000",
 		Handler:           servemux,
-		TLSConfig:         tlsconfig,
 		ReadTimeout:       60 * time.Minute,
 		ReadHeaderTimeout: 30 * time.Second,
 		WriteTimeout:      60 * time.Minute,
 		IdleTimeout:       30 * time.Minute,
 	}
-	log.Fatal(server.ListenAndServeTLS("", ""))
+	logger.Fatal(server.ListenAndServe())
 }
