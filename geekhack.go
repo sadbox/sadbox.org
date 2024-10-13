@@ -18,9 +18,11 @@ const (
 		` where channel = ? group by date order by date`
 	totalPosts = `select Nick, COUNT(Nick) as Posts from messages where channel` +
 		` = ? group by nick order by Posts desc limit 10;`
-	postsByMinute = `select count from (select COUNT(*) count,` +
-		`((strftime ('%H', Time) * 60) + strftime ('%M',Time)) minute ` +
-		`from messages where channel = ? group by minute order by minute);`
+	postsByMinute = `select messages_per_minute from ` +
+		`(select COUNT(RID)/((CAST(strftime("%J", MAX(Time)) as REAL) - ` +
+		`CAST(strftime("%J", MIN(Time)) as REAL)) * 1440) messages_per_minute, ` +
+		`(CAST(strftime('%H',Time) as INT)*60)+(CAST(strftime('%M',Time) as INT)) minute_timestamp ` +
+		`from messages where channel = ? group by minute_timestamp order by minute_timestamp);`
 	topTenWords = `select Nick, ` + "`" + `%[1]s` + "`" + " from `%[2]s_words` order by " + "`" + `%[1]s` + "`" + ` desc limit 10;`
 )
 
@@ -255,12 +257,16 @@ func (g *Geekhack) Update() {
 		return
 	}
 	for rows.Next() {
-		var posts float64
+		var posts sql.NullFloat64
 		if err := rows.Scan(&posts); err != nil {
 			log.Println(err)
 			return
 		}
-		PostsByMinute = append(PostsByMinute, posts)
+		if posts.Valid {
+			PostsByMinute = append(PostsByMinute, posts.Float64)
+		} else {
+			PostsByMinute = append(PostsByMinute, float64(0))
+		}
 	}
 	if err := rows.Err(); err != nil {
 		log.Println(err)
