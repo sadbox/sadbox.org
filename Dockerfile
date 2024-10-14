@@ -1,5 +1,4 @@
 FROM golang:1.23
-ADD sadbot_archive.db /db/sadbot_archive.db
 WORKDIR /sadbox.org
 COPY go.mod go.sum ./
 RUN --mount=type=cache,target=/go/pkg/mod go mod download && go mod verify
