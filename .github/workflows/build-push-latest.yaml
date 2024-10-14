@@ -1,10 +1,9 @@
-name: sadbox.org build, test, and maybe push
+name: sadbox.org build, and maybe push
 
 on:
   push:
     branches-ignore: # Dependabot branches get ran through pull_request
       - 'dependabot/**'
-  pull_request:
   schedule:
     - cron: '0 5 * * 1,3,5'
 
@@ -35,3 +34,5 @@ jobs:
           push: true
           tags: sadbox/sadbox-web:latest
           platforms: linux/amd64,linux/arm64
+          cache-from: type=gha,scope=docker-build
+          cache-to: type=gha,mode=max,scope=docker-build
