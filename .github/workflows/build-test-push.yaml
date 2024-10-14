@@ -10,7 +10,7 @@ on:
 
 jobs:
   publish-latest:
-    if: startsWith(github.ref, 'refs/heads/main')
+    if: startsWith(github.ref, 'refs/heads/master')
     runs-on: ubuntu-latest
     steps:
       - name: checkout code
