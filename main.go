@@ -4,10 +4,8 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"database/sql"
-	"embed"
 	"fmt"
 	"html/template"
-	"io/fs"
 	"log"
 	mathRand "math/rand"
 	"net"
@@ -22,9 +20,6 @@ import (
 	sqldblogger "github.com/simukti/sqldb-logger"
 	"github.com/simukti/sqldb-logger/logadapter/zerologadapter"
 )
-
-//go:embed views static-files
-var staticFiles embed.FS
 
 var logger = log.New(os.Stdout, "sadbox.org: ", log.Ldate|log.Ltime|log.Lshortfile)
 
@@ -185,7 +180,7 @@ func (sk *sessionKeys) Spin() {
 func main() {
 	logger.Println("Starting sadbox.org")
 
-	template.Must(templates.ParseFS(staticFiles, "views/*.tmpl"))
+	template.Must(templates.ParseGlob("/views/*.tmpl"))
 	logger.Println(templates.DefinedTemplates())
 
 	var err error
@@ -199,13 +194,7 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	onlyStatic, err := fs.Sub(staticFiles, "static-files")
-	if err != nil {
-		logger.Fatal(err)
-	}
-	logger.Println("before db open")
-	staticFileServer := http.FileServer(http.FS(onlyStatic))
-	logger.Println("after db open")
+	staticFileServer := http.FileServer(http.Dir("/static-files"))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.Host, "geekwhack.org") {
 			fmt.Fprintf(w, "rip ripster55\n")
