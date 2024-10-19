@@ -50,7 +50,6 @@ $(function () {
      $.getJSON(window.location.pathname + 'postsbydayall', function (data) {
         $("#spinnerTwo").hide();
         $("#postsByDayAllDiv").show();
-        console.log(data);
         const ctx = document.getElementById("postsByDayAll");
         new Chart(ctx, {
             type: 'line',

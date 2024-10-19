@@ -27,5 +27,4 @@ COPY --from=node-builder /app/node_modules/date-fns/cdn.min.js.map /static-files
 COPY --from=node-builder /app/node_modules/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js /static-files/vendor/chartjs-adapter-date-fns.bundle.min.js
 COPY --from=node-builder /app/tailwind.css /static-files/static/tailwind.css
 COPY --from=golang-builder /bin/sadbox.org ./
-RUN ls -lah /views
 CMD ["/bin/sadbox.org"]

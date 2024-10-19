@@ -9,11 +9,15 @@
   <changefreq>monthly</changefreq>
 </url>
 <url>
-  <loc>https://sadbox.org/keyboards</loc>
-  <changefreq>weekly</changefreq>
+  <loc>https://sadbox.org/geekhack</loc>
+  <changefreq>monthly</changefreq>
 </url>
 <url>
-  <loc>https://sadbox.org/geekhack</loc>
-  <changefreq>always</changefreq>
+  <loc>https://sadbox.org/esports</loc>
+  <changefreq>monthly</changefreq>
+</url>
+<url>
+  <loc>https://sadbox.org/geekhack.minecraft</loc>
+  <changefreq>monthly</changefreq>
 </url>
 </urlset>
