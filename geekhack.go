@@ -65,7 +65,7 @@ func NewIRCChannel(chanInfo channel) (*Geekhack, error) {
 		CurseWords: make(map[string][]Tuple),
 	}
 
-	go geekhack.Update()
+	geekhack.Update()
 
 	return geekhack, nil
 }
