@@ -31,3 +31,4 @@ _testmain.go
 /deploy.sh
 /bindata.go
 /cert-cache/
+/node_modules/

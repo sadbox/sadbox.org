@@ -3,12 +3,12 @@
 <html>
   <head>
     <title>{{ .Webname.Title }}</title>
-    <link rel="author" href="humans.txt" />
+    <link rel="author" href="/humans.txt" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="/vendor/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/tailwind.css" rel="stylesheet">
   </head>
   <body>
-<div class="container">
-    <h3><a class="brand" href="/">{{ .Webname.Brand }}</a></h3>
+<div class="container mx-auto">
+    <h3><a class="text-2xl font-medium text-blue-600 hover:underline" href="/">{{ .Webname.Brand }}</a></h3>
 </div>
 {{end}}

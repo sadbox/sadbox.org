@@ -1,20 +1,20 @@
 {{define "geekhack.tmpl" -}}
 {{template "header.tmpl" . -}}
 
-<div class="container">
-    <h1>{{.Geekhack.Channel}} statistics <small>since 2012-12-17 @ 04:04:00 UTC</small></h1>
+<div class="container mx-auto">
+    <h1 class="font-semibold text-4xl">{{.Geekhack.Channel}} statistics <small class="font-normal text-3xl">since 2012-12-17 @ 04:04:00 UTC</small></h1>
     <h2>Posts</h2>
-    <div id="postsByMinute"></div>
+    <div id="postsByMinuteDiv"><canvas id="postsByMinute"></canvas></div>
     <div id="spinner"><img src="/static/loading.gif"/></div>
-    <div id="postsByDayAll"></div>
+    <div id="postsByDayAllDiv"><canvas id="postsByDayAll"></canvas></div>
     <div id="spinnerTwo"><img src="/static/loading.gif"/></div>
-    <div class="row">
-        <div class="col-md-6">
-            <div class="panel panel-default">
-                <div class="panel-heading">Total Posts</div>
-                <table class="table table-condensed table-hover table-bordered">
+    <div class="flex flex-wrap -mx-2">
+        <div class="md:w-6/12 px-2">
+            <div class="mb-2 rounded border border-collapse shadow-sm">
+                <div class="font-medium text-xl bg-slate-200 px-2 py-3 border-solid border-grey-light border-b">Total Posts</div>
+                <table class="table-auto w-full">
                     {{range $index, $tuple := .Geekhack.TotalPosts}}
-                        <tr>
+                        <tr class="hover:bg-slate-300 odd:bg-white even:bg-slate-100">
                         <td>{{add $index 1}}</td>
                         <td>{{$tuple.Name}}</td>
                         <td>{{$tuple.Count}}</td>
@@ -23,12 +23,12 @@
                 </table>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="panel panel-default">
-                <div class="panel-heading">Most Active Days</div>
-                <table class="table table-condensed table-hover table-bordered">
+        <div class="md:w-6/12 px-2">
+            <div class="mb-2 border-solid border-grey-light rounded border shadow-sm">
+                <div class="font-medium text-xl bg-slate-200 px-2 py-3 border-solid border-grey-light border-b">Most Active Days</div>
+                <table class="table-auto border-solid w-full">
                     {{range $index, $tuple := .Geekhack.PostsByDay}}
-                        <tr>
+                        <tr class="hover:bg-slate-300 odd:bg-white even:bg-slate-100">
                         <td>{{add $index 1}}</td>
                         <td>{{$tuple.Name}}</td>
                         <td>{{$tuple.Count}}</td>
@@ -39,14 +39,14 @@
         </div>
     </div>
     <h2>Words!</h2>
-    <div class="row">
+    <div class="flex flex-wrap -mx-2">
         {{range $word, $tuple := .Geekhack.CurseWords}}
-            <div class="col-md-3">
-                <div class="panel panel-default">
-                    <div class="panel-heading">{{$word}}</div>
-                    <table class="table table-condensed table-hover table-bordered">
+            <div class="md:w-3/12 px-2">
+                <div class="mb-2 border-solid border-grey-light rounded border shadow-sm">
+                    <div class="font-medium text-xl bg-slate-200 px-2 py-3 border-solid border-grey-light border-b">{{$word}}</div>
+                    <table class="table-auto border-solid w-full">
                         {{range $index, $innertuple := $tuple}}
-                            <tr>
+                            <tr class="hover:bg-slate-300 odd:bg-white even:bg-slate-100">
                             <td>{{add $index 1}}</td>
                             <td>{{$innertuple.Name}}</td>
                             <td>{{$innertuple.Count}}</td>
@@ -59,9 +59,9 @@
     </div>
 </div>
 <script src="/vendor/jquery.min.js"></script>
-<script src="/vendor/highcharts.min.js"></script>
+<script src="/vendor/chart.umd.js"></script>
+<script src="/vendor/date-fns.min.js"></script>
+<script src="/vendor/chartjs-adapter-date-fns.bundle.min.js"></script>
 <script src="/static/gencharts.js"></script>
-<link href="/static/geekhack.css" rel="stylesheet">
-<link href="/vendor/highcharts.css" rel="stylesheet">
 {{template "footer.tmpl"}}
 {{end}}

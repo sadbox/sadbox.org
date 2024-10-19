@@ -1,20 +1,20 @@
 {{define "main.tmpl" -}}
 {{template "header.tmpl" . -}}
-<div class="container">
-    <div class="row">
-        <div class="col-md-7">
-            <div class="jumbotron">
-                <h1 class="display-3">James McGuire</h1>
-                <p class="lead">Linux Nerd Extraordinaire</p>
+<div class="container mx-auto">
+    <div class="flex flex-wrap -mx-2">
+        <div class="md:w-7/12 px-2">
+            <div class="rounded-lg bg-slate-300 px-10 py-20 text-surface">
+                <h1 class="text-6xl font-medium">James McGuire</h1>
+                <p class="text-xl font-light">Linux Nerd Extraordinaire</p>
             </div>
         </div>
-        <div class="col-md-5">
-            <h4><a href="http://github.com/sadbox/">github</a></h4>
-            <h4><a href="http://www.linkedin.com/in/jamesbmcguire">linkedin</a></h4>
-            <hr>
-            <h4>IRC Channel Stats</h4>
+        <div class="d:w-5/12 px-2">
+            <h4><a class="font-medium text-blue-600 text-2xl hover:underline" href="http://github.com/sadbox/">github</a></h4>
+            <h4><a class="font-medium text-blue-600 text-2xl hover:underline" href="http://www.linkedin.com/in/jamesbmcguire">linkedin</a></h4>
+            <hr class="h-px my-4 bg-gray-200 border-0">
+            <h4 class="font-medium text-3xl">IRC Channel Stats</h4>
             {{range $index, $channel := .Main.Channels}}
-                <h4><a href="{{$channel.LinkName}}">{{$channel.ChannelName}}</a></h4>
+                <h4><a class="font-medium text-2xl text-blue-600 hover:underline" href="{{$channel.LinkName}}">{{$channel.ChannelName}}</a></h4>
             {{end}}
         </div>
     </div>

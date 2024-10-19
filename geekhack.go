@@ -41,9 +41,14 @@ type Geekhack struct {
 	TotalPosts            []Tuple
 	PostsByMinute         []float64
 	PostsByMinuteSmoothed []float64
-	PostByDayAll          [][]int64
-	PostByDayAllSmoothed  [][]int64
+	PostByDayAll          []TimePoint
+	PostByDayAllSmoothed  []TimePoint
 	age                   time.Time
+}
+
+type TimePoint struct {
+	X int64 `json:"x"`
+	Y int64 `json:"y"`
 }
 
 type Tuple struct {
@@ -92,21 +97,27 @@ func (g *Geekhack) pbmHandler(w http.ResponseWriter, r *http.Request) {
 	g.mutex.RLock()
 	defer g.mutex.RUnlock()
 	type returnStruct struct {
-		Type string    `json:"type,omitempty"`
-		Name string    `json:"name"`
-		Data []float64 `json:"data"`
+		Label           string    `json:"label"`
+		Data            []float64 `json:"data"`
+		Fill            bool      `json:"fill"`
+		BackgroundColor string    `json:"backgroundColor"`
+		BorderColor     string    `json:"borderColor"`
 	}
 
 	jsonSource := []returnStruct{
 		returnStruct{
-			"",
-			"Posts Per Minute",
-			g.PostsByMinute,
-		},
-		returnStruct{
-			"spline",
 			"Posts Per Minute Smoothed",
 			g.PostsByMinuteSmoothed,
+			false,
+			"#0f172a",
+			"#0f172a",
+		},
+		returnStruct{
+			"Posts Per Minute",
+			g.PostsByMinute,
+			true,
+			"#3b82f6",
+			"#1e40af",
 		},
 	}
 	jsonData, err := json.Marshal(jsonSource)
@@ -125,20 +136,26 @@ func (g *Geekhack) pbdaHandler(w http.ResponseWriter, r *http.Request) {
 	g.mutex.RLock()
 	defer g.mutex.RUnlock()
 	type returnStruct struct {
-		Type string    `json:"type,omitempty"`
-		Name string    `json:"name"`
-		Data [][]int64 `json:"data"`
+		Label           string      `json:"label"`
+		Data            []TimePoint `json:"data"`
+		Fill            bool        `json:"fill"`
+		BackgroundColor string      `json:"backgroundColor"`
+		BorderColor     string      `json:"borderColor"`
 	}
 	jsonSource := []returnStruct{
 		returnStruct{
-			Type: "",
-			Name: "Posts Per Day All",
-			Data: g.PostByDayAll,
+			Label:           "Posts Per Day All Smoothed",
+			Data:            g.PostByDayAllSmoothed,
+			Fill:            false,
+			BackgroundColor: "#0f172a",
+			BorderColor:     "#0f172a",
 		},
 		returnStruct{
-			Type: "spline",
-			Name: "Posts Per Day All Smoothed",
-			Data: g.PostByDayAllSmoothed,
+			Label:           "Posts Per Day All",
+			Data:            g.PostByDayAll,
+			Fill:            true,
+			BackgroundColor: "#3b82f6",
+			BorderColor:     "#1e40af",
 		},
 	}
 	jsonData, err := json.Marshal(jsonSource)
@@ -205,10 +222,10 @@ func (g *Geekhack) UpdateCurseWords() (map[string][]Tuple, error) {
 	return CurseWords, nil
 }
 
-func (g *Geekhack) UpdatePostByDayAll() ([][]int64, error) {
+func (g *Geekhack) UpdatePostByDayAll() ([]TimePoint, error) {
 	var date string
 	var posts int
-	var returnValue [][]int64
+	var returnValue []TimePoint
 	rows, err := sadboxDB.Query(postByDayAll, g.Channel)
 	if err != nil {
 		return nil, err
@@ -221,7 +238,7 @@ func (g *Geekhack) UpdatePostByDayAll() ([][]int64, error) {
 		if err != nil {
 			return nil, err
 		}
-		returnValue = append(returnValue, []int64{convTime.Unix() * 1000, int64(posts)})
+		returnValue = append(returnValue, TimePoint{convTime.UnixMilli(), int64(posts)})
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -301,17 +318,17 @@ func (g *Geekhack) Update() {
 	// Finish update, need to unlock it
 }
 
-func averageWithTime(original [][]int64) [][]int64 {
+func averageWithTime(original []TimePoint) []TimePoint {
 	first := make([]int64, len(original))
 	second := make([]float64, len(original))
 	for key, value := range original {
-		first[key] = value[0]
-		second[key] = float64(value[1])
+		first[key] = value.X
+		second[key] = float64(value.Y)
 	}
 	second = movingAverage(movingAverage(movingAverage(second, 20), 10), 5)
-	result := make([][]int64, len(original))
+	result := make([]TimePoint, len(original))
 	for i := 0; i < len(original); i++ {
-		result[i] = []int64{first[i], int64(second[i])}
+		result[i] = TimePoint{first[i], int64(second[i])}
 	}
 	return result
 }

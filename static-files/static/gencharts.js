@@ -1,138 +1,93 @@
 $(function () {
-     $("#spinner").show();
-     $("#spinnerTwo").show();
-     $.getJSON(window.location.pathname + 'postsbyminute', function (data) {
-        Highcharts.setOptions({
-            global : {
-                useUTC : false
+    $("#spinner").show();
+    $("#spinnerTwo").show();
+    $.getJSON(window.location.pathname + 'postsbyminute', function (data) {
+        $("#spinner").hide();
+        $("#postsByMinuteDiv").show();
+        var currentime = new Date();
+        var labels = Array.from(Array(1440).keys(), (x) => dateFns.addMinutes(Date(0,0,0), x));
+        const ctx = document.getElementById("postsByMinute");
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: data
+            },
+            options: {
+                elements: {
+                    point: {
+                        radius: 0
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        filter: function (tooltipItem) {
+                            return tooltipItem.datasetIndex === 1;
+                        },
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.y.toPrecision(3)+' posts per minute at '+dateFns.format(context.parsed.x, "hh:mm");
+                            }
+                        }
+                    }
+
+                },
+                scales: {
+                    x: {
+                        type: 'time', 
+                    },
+                    y: {
+                        beginAtZero: true
+                    }
+                }
             }
         });
-        $("#spinner").hide();
-        $("#postsByMinute").show();
-        var currentime = new Date();
-        $('#postsByMinute').highcharts({
-            chart: {
-                type: 'area',
-                styledMode: true
-            },
-            title: {
-                text: 'Activity in channel by time of day'
-            },
-            xAxis: {
-                type: 'datetime',
-                dateTimeLabelFormats: {
-                    day: '%H:%M'
-                },
-                title: {
-                    text: "Time of Post (UTC Offset: "+(-currentime.getTimezoneOffset()/60)+")"
-                }
-            },
-            yAxis: {
-                title: {
-                    text: 'Posts Per Minute'
-                }
-            },
-            tooltip: {
-                formatter: function() {
-                    return '<b>'+this.y.toPrecision(3)+'</b> posts per minute at <b>'+Highcharts.dateFormat('%H:%M', this.x)+'</b>'
-                }
-            },
-            legend: {
-                enabled: false
-            },
-            credits: {
-                enabled: false
-            },
-            plotOptions: {
-                area: {
-                    pointStart: Date.UTC(0,0,0),
-                    pointInterval: 60 * 1000,
-                    marker: {
-                        enabled: false,
-                        symbol: 'circle',
-                        radius: 2,
-                        states: {
-                            hover: {
-                                enabled: true
-                            }
-                        }
-                    }
-                },
-                spline: {
-                    pointStart: Date.UTC(0,0,0),
-                    pointInterval: 60 * 1000,
-                    marker: {
-                        enabled: false,
-                        states: {
-                            hover: {
-                                enabled: false
-                            }
-                        }
-                    }
-                }
-            },
-            series: data
-        });
+
     });
      $.getJSON(window.location.pathname + 'postsbydayall', function (data) {
         $("#spinnerTwo").hide();
-        $("#postsByDayAll").show();
-        $('#postsByDayAll').highcharts({
-            chart: {
-                type: 'area',
-                zoomType: 'x',
-                styledMode: true
+        $("#postsByDayAllDiv").show();
+        console.log(data);
+        const ctx = document.getElementById("postsByDayAll");
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: data
             },
-            title: {
-                text: 'Activity in channel over time'
-            },
-            xAxis: {
-                type: 'datetime',
-                title: {
-                    text: "Date"
-                }
-            },
-            yAxis: {
-                title: {
-                    text: 'Posts'
-                }
-            },
-            tooltip: {
-                formatter: function() {
-                    return '<b>'+this.y+'</b> posts on <b>'+Highcharts.dateFormat('%b %d, %Y', this.x)+'</b>'
-                }
-            },
-            legend: {
-                enabled: false
-            },
-            credits: {
-                enabled: false
-            },
-            plotOptions: {
-                area: {
-                    marker: {
-                        enabled: false,
-                        symbol: 'circle',
-                        radius: 2,
-                        states: {
-                            hover: {
-                                enabled: true
-                            }
-                        }
+            options: {
+                elements: {
+                    point: {
+                        radius: 0
                     }
                 },
-                spline: {
-                    marker: {
-                        enabled: false,
-                        states: {
-                            hover: {
-                                enabled: false
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        filter: function (tooltipItem) {
+                            return tooltipItem.datasetIndex === 1;
+                        },
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.y.toString()+' posts on '+dateFns.format(context.parsed.x, 'LLL do, y');
                             }
                         }
                     }
+
+                },
+                scales: {
+                    x: {
+                        type: 'time', 
+                    },
+                    y: {
+                        beginAtZero: true
+                    }
                 }
-            },
-            series: data
+            }
         });
     });
 });
