@@ -4,7 +4,7 @@
   "author": "James McGuire <jbm@sadbox.org>",
   "license": "MIT",
   "dependencies": {
-    "chart.js": "^4.4.6",
+    "chart.js": "^4.4.7",
     "chartjs-adapter-date-fns": "^3.0.0",
     "date-fns": "^4.1.0",
     "jquery": "^3.7.1",
